@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}กิจกรรมและสถานที่ท่องเที่ยว - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="page-header" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 4rem 1rem; text-align: center; border-radius: 0 0 40px 40px; margin-bottom: 3rem;">
+    <h1 style="margin: 0; font-size: 2.5rem; font-weight: 800;">🎯 กิจกรรมและสถานที่ท่องเที่ยว</h1>
+    <p style="margin-top: 1rem; opacity: 0.9; font-size: 1.1rem;">สัมผัสประสบการณ์การพักผ่อนที่มากกว่าแค่การนอนพักที่บ้านนารีสอร์ท</p>
+</section>
+
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem 5rem 1rem;">
+    <!-- Resort Activities -->
+    <div style="margin-bottom: 4rem;">
+        <h2 style="color: var(--primary); font-size: 1.8rem; border-left: 5px solid var(--accent); padding-left: 1rem; margin-bottom: 2rem;">🏡 กิจกรรมในรีสอร์ท</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
+            {% for item in attractions if item.category == 'activity' %}
+            <div class="activity-card" onclick="showActivityDetailsById('{{ item.id }}')" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.3s ease;">
+                <div style="height: 200px; position: relative; overflow: hidden;">
+                    {% if item.images and item.images|length > 0 %}
+                    <img src="{{ item.images[0] }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">No Image</div>
+                    {% endif %}
+                </div>
+                <div style="padding: 1.2rem; text-align: center;">
+                    <h3 style="margin: 0; color: var(--primary); font-size: 1.2rem;">{{ item.name }}</h3>
+                    <div style="margin-top: 0.8rem; color: var(--accent); font-weight: 600; font-size: 0.85rem;">
+                        คลิกดูรายละเอียด ➔
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p style="color: #64748b; grid-column: 1/-1; text-align: center;">ขออภัย ยังไม่มีกิจกรรมแนะนำในขณะนี้</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Nearby Attractions -->
+    <div>
+        <h2 style="color: var(--primary); font-size: 1.8rem; border-left: 5px solid var(--primary-light); padding-left: 1rem; margin-bottom: 2rem;">🏞️ สถานที่ท่องเที่ยวใกล้เคียง</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
+            {% for item in attractions if item.category == 'attraction' %}
+            <div class="activity-card" onclick="showActivityDetailsById('{{ item.id }}')" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.3s ease;">
+                <div style="height: 200px; position: relative; overflow: hidden;">
+                    {% if item.images and item.images|length > 0 %}
+                    <img src="{{ item.images[0] }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">No Image</div>
+                    {% endif %}
+                </div>
+                <div style="padding: 1.2rem; text-align: center;">
+                    <h3 style="margin: 0; color: var(--primary); font-size: 1.2rem;">{{ item.name }}</h3>
+                    <div style="margin-top: 0.8rem; color: var(--accent); font-weight: 600; font-size: 0.85rem;">
+                        คลิกดูรายละเอียด ➔
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p style="color: #64748b; grid-column: 1/-1; text-align: center;">ขออภัย ยังไม่มีสถานที่แนะนำในขณะนี้</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Activity Detail Modal -->
+<div id="activity-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px; padding: 0; overflow: hidden; border-radius: 20px;">
+        <div style="position: relative; height: 350px;">
+            <img id="act-modal-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
+            <div id="act-modal-overlay" style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.6)); pointer-events: none;"></div>
+            <button onclick="closeActivityModal()" style="position: absolute; top: 15px; right: 15px; background: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 10;">✕</button>
+        </div>
+        
+        <div id="act-gallery-container" style="padding: 10px; background: #f8fafc; border-bottom: 1px solid #eee; display: none;">
+            <div id="act-thumbnail-row" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; justify-content: center;"></div>
+        </div>
+
+        <div style="padding: 2.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <span id="act-modal-category" style="background: var(--secondary); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;"></span>
+                <div id="act-image-count" style="font-size: 0.85rem; color: #64748b; font-weight: 600;"></div>
+            </div>
+            <h2 id="act-modal-name" style="color: var(--primary); margin: 0 0 1rem 0; font-size: 2rem;"></h2>
+            <p id="act-modal-desc" style="color: #4a5568; line-height: 1.8; font-size: 1.1rem; margin-bottom: 2.5rem; white-space: pre-line;"></p>
+            <div id="act-modal-footer" style="border-top: 2px solid #f1f5f9; padding-top: 2rem; display: flex; gap: 1rem;">
+                <a id="act-modal-map" href="#" target="_blank" class="btn btn-primary" style="flex: 1.5; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.2rem;">
+                    📍 ดูแผนที่ / นำทาง
+                </a>
+                <button onclick="closeActivityModal()" class="btn btn-outline" style="flex: 1; padding: 1.2rem;">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const attractionsData = {{ attractions | tojson | safe }};
+
+    function showActivityDetailsById(id) {
+        const item = attractionsData.find(a => a.id == id);
+        if (!item) return;
+
+        const nameEl = document.getElementById('act-modal-name');
+        const descEl = document.getElementById('act-modal-desc');
+        const catEl = document.getElementById('act-modal-category');
+        const imgEl = document.getElementById('act-modal-img');
+        const countEl = document.getElementById('act-image-count');
+        const galleryCont = document.getElementById('act-gallery-container');
+        const thumbRow = document.getElementById('act-thumbnail-row');
+
+        nameEl.innerText = item.name;
+        descEl.innerText = item.description || 'ไม่มีรายละเอียด';
+        catEl.innerText = item.category === 'activity' ? '✨ กิจกรรม' : '🏞️ สถานที่ท่องเที่ยว';
+        
+        thumbRow.innerHTML = '';
+        const images = item.images || [];
+        
+        if (images.length > 0) {
+            imgEl.src = images[0];
+            if (images.length > 1) {
+                galleryCont.style.display = 'block';
+                countEl.innerText = `📸 ${images.length} รูปภาพ`;
+                images.forEach((url, i) => {
+                    const thumb = document.createElement('img');
+                    thumb.src = url;
+                    thumb.style.cssText = 'width: 60px; height: 50px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; transition: all 0.2s;';
+                    if (i === 0) thumb.style.borderColor = 'var(--primary)';
+                    thumb.onclick = () => {
+                        imgEl.src = url;
+                        Array.from(thumbRow.children).forEach(t => t.style.borderColor = 'transparent');
+                        thumb.style.borderColor = 'var(--primary)';
+                    };
+                    thumbRow.appendChild(thumb);
+                });
+            } else {
+                galleryCont.style.display = 'none';
+                countEl.innerText = '';
+            }
+        } else {
+            imgEl.src = 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+            galleryCont.style.display = 'none';
+            countEl.innerText = '';
+        }
+
+        const mapBtn = document.getElementById('act-modal-map');
+        if (item.location_url) {
+            mapBtn.href = item.location_url;
+            mapBtn.style.display = 'flex';
+        } else {
+            mapBtn.style.display = 'none';
+        }
+
+        document.getElementById('activity-modal').style.display = 'flex';
+    }
+
+    function closeActivityModal() {
+        document.getElementById('activity-modal').style.display = 'none';
+    }
+
+    window.addEventListener('click', function(event) {
+        const actModal = document.getElementById('activity-modal');
+        if (event.target == actModal) {
+            closeActivityModal();
+        }
+    });
+</script>
+
+<style>
+.activity-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.1) !important;
+}
+.activity-card:hover img {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}

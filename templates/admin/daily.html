@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 style="color: var(--primary);">📅 รายการประจำวัน</h1>
+    <p style="color: #666;">รายการเช็คอินและเช็คเอาท์ประจำวันที่ {{ datetime.now().strftime('%d/%m/%Y') }}</p>
+
+    <div class="card admin-card" style="margin-top: 2rem;">
+        {% if not bookings %}
+        <div style="text-align: center; padding: 2rem;">
+            <p>ไม่มีรายการเช็คอิน/เช็คเอาท์ในวันนี้</p>
+        </div>
+        {% else %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #eee;">
+                    <th style="padding: 12px; text-align: left;">ห้อง</th>
+                    <th style="padding: 12px; text-align: left;">ลูกค้า</th>
+                    <th style="padding: 12px; text-align: left;">เบอร์โทร</th>
+                    <th style="padding: 12px; text-align: left;">ประเภท</th>
+                    <th style="padding: 12px; text-align: left;">สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;"><b>{{ b.rooms.name }}</b></td>
+                    <td style="padding: 12px;">{{ b.guest_name }}</td>
+                    <td style="padding: 12px;">{{ b.guest_phone }}</td>
+                    <td style="padding: 12px;">
+                        {% if b.checkin_date == datetime.now().strftime('%Y-%m-%d') %}
+                        <span style="color: #2e7d32;">⬇️ เช็คอิน</span>
+                        {% else %}
+                        <span style="color: #c62828;">⬆️ เช็คเอาท์</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px;">
+                        <span class="badge {% if b.status == 'paid' %}badge-verified{% else %}badge-pending{% endif %}">
+                            {{ b.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

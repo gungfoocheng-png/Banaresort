@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}รายรับประจำวัน - บ้านนารีสอร์ท{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--primary); margin: 0;">💰 รายรับประจำวัน</h1>
+        <div class="no-print" style="display: flex; gap: 10px;">
+            <button onclick="window.print()" class="btn btn-primary" style="background: #2b6cb0; display: flex; align-items: center; gap: 8px;">
+                🖨️ พิมพ์รายงาน
+            </button>
+            <button onclick="toggleSetupGuide()" class="btn" style="background: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0;">
+                ⚙️ ตั้งค่าเครื่องพิมพ์
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Summary Card -->
+    <div class="card" style="background: linear-gradient(135deg, #2f855a 0%, #276749 100%); color: white; padding: 2rem; margin-bottom: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">ยอดรายรับประจำวันที่</p>
+                <h2 style="margin: 5px 0 0 0; font-size: 1.8rem;">{{ today }}</h2>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">รายรับรวมทั้งหมด</p>
+                <h2 style="margin: 5px 0 0 0; font-size: 2.5rem; font-weight: 800;">฿{{ "{:,.2f}".format(total_amount) }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printer Setup Guide (Hidden by default) -->
+    <div id="setup-guide" class="card no-print" style="display: none; background: #fffaf0; border: 1px solid #feebc8; margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px;">
+        <h3 style="color: #9c4221; margin-top: 0; display: flex; align-items: center; gap: 8px;">🔧 วิธีตั้งค่าเครื่องพิมพ์</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                <p style="font-weight: bold; color: #7b341e; margin-bottom: 5px;">สำหรับเครื่องพิมพ์สลิป (Thermal):</p>
+                <ul style="font-size: 0.9rem; color: #7b341e; padding-left: 1.2rem;">
+                    <li>เลือกเครื่องพิมพ์ความร้อน (เช่น XP-80) ในหน้าคำสั่งพิมพ์</li>
+                    <li>ตั้งค่า <b>Margin (ขอบกระดาษ)</b> เป็น <b>None (ไม่มี)</b></li>
+                    <li>ปิดการใช้งาน <b>Headers and Footers</b></li>
+                </ul>
+            </div>
+            <div>
+                <p style="font-weight: bold; color: #7b341e; margin-bottom: 5px;">สำหรับเครื่องพิมพ์ทั่วไป (A4):</p>
+                <ul style="font-size: 0.9rem; color: #7b341e; padding-left: 1.2rem;">
+                    <li>เลือกขนาดกระดาษเป็น <b>A4</b></li>
+                    <li>เลือกการพิมพ์แบบ <b>Portrait (แนวตั้ง)</b></li>
+                    <li>ตรวจสอบให้แน่ใจว่าเปิดใช้งาน <b>Background Graphics</b> เพื่อแสดงสีกราฟิก</li>
+                </ul>
+            </div>
+        </div>
+        <button onclick="toggleSetupGuide()" style="margin-top: 1rem; border: none; background: none; color: #9c4221; text-decoration: underline; cursor: pointer;">ปิดคำแนะนำ</button>
+    </div>
+
+    <!-- Report Table -->
+    <div class="card admin-card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+        <div style="background: #f8fafc; padding: 1.2rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+            <span style="font-weight: bold; color: #64748b;">รายละเอียดรายการรับเงิน</span>
+            <span style="font-size: 0.85rem; color: #94a3b8;">ทั้งหมด {{ report_data|length }} รายการ</span>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #e2e8f0;">
+                    <th style="padding: 1rem;">ลูกค้า / รายการ</th>
+                    <th style="padding: 1rem;">เช็คอิน</th>
+                    <th style="padding: 1rem;">เช็คเอาต์</th>
+                    <th style="padding: 1rem; text-align: center;">จำนวนวัน</th>
+                    <th style="padding: 1rem; text-align: right;">จำนวนเงิน</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if not report_data %}
+                <tr>
+                    <td colspan="5" style="padding: 3rem; text-align: center; color: #94a3b8;">
+                        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🍃</span>
+                        ยังไม่มีรายรับสำหรับวันนี้
+                    </td>
+                </tr>
+                {% else %}
+                {% for item in report_data %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;">
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: bold; color: #1e293b;">{{ item.guest_name }}</div>
+                        <div style="font-size: 0.8rem; color: #64748b;">ห้อง: {{ item.room_name }}</div>
+                    </td>
+                    <td style="padding: 1rem; color: #475569;">{{ item.checkin }}</td>
+                    <td style="padding: 1rem; color: #475569;">{{ item.checkout }}</td>
+                    <td style="padding: 1rem; text-align: center; font-weight: 500;">{{ item.nights }}</td>
+                    <td style="padding: 1rem; text-align: right; font-weight: bold; color: var(--primary);">฿{{ "{:,.2f}".format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+            {% if report_data %}
+            <tfoot>
+                <tr style="background: #f8fafc; font-weight: bold; font-size: 1.1rem; border-top: 2px solid #e2e8f0;">
+                    <td colspan="4" style="padding: 1.2rem; text-align: right;">รวมรายรับทั้งสิ้น</td>
+                    <td style="padding: 1.2rem; text-align: right; color: var(--primary);">฿{{ "{:,.2f}".format(total_amount) }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="no-print" style="margin-top: 2rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
+        รายงานนี้สร้างขึ้นเมื่อ {{ today }} | บ้านนารีสอร์ท
+    </div>
+</div>
+
+<style>
+    @media print {
+        .navbar, .admin-navbar, .no-print, footer, .logo {
+            display: none !important;
+        }
+        body {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #eee !important;
+            margin-bottom: 1rem !important;
+        }
+        .admin-card {
+            border: 1px solid #eee !important;
+        }
+        th {
+            background-color: #f1f5f9 !important;
+            -webkit-print-color-adjust: exact;
+        }
+        .total-amount-card {
+            background: #eee !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact;
+        }
+    }
+</style>
+
+<script>
+function toggleSetupGuide() {
+    const guide = document.getElementById('setup-guide');
+    guide.style.display = guide.style.display === 'none' ? 'block' : 'none';
+    if (guide.style.display === 'block') {
+        guide.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+</script>
+{% endblock %}

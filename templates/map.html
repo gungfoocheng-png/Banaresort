@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}แผนผังรีสอร์ท - Baan Na Resort{% endblock %}
+
+{% block content %}
+<div class="container text-center" style="text-align: center; margin-top: 3rem;">
+    <h2 style="color: var(--primary);">📍 แผนผังรีสอร์ท</h2>
+    <p id="availability-status">แสดงสถานะห้องพักปัจจุบัน (คลิกที่ห้อง <b>สีเขียว</b> เพื่อจอง)</p>
+    
+    <div class="map-container" style="margin-top: 2rem;">
+        <div id="resort-map" class="resort-map">
+            <!-- Rooms will be rendered here by map.js -->
+            <p style="padding-top: 200px;">กำลังโหลดแผนผัง...</p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 2rem; margin-bottom: 4rem;">
+        <div><span style="display:inline-block; width:20px; height:20px; background:var(--status-available); border-radius:3px; vertical-align:middle;"></span> ว่าง (I)</div>
+        <div><span style="display:inline-block; width:20px; height:20px; background:var(--status-reserved); border-radius:3px; vertical-align:middle;"></span> ติดจอง (R)</div>
+        <div><span style="display:inline-block; width:20px; height:20px; background:var(--status-occupied); border-radius:3px; vertical-align:middle;"></span> ไม่ว่าง (O)</div>
+    </div>
+</div>
+
+<!-- Room Booking Modal -->
+<div id="room-modal" class="modal">
+    <div class="modal-content">
+            <div style="display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 1.5rem; text-align: center;">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem;">
+                    <span id="modal-room-number" style="background: var(--secondary); color: white; padding: 2px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;"></span>
+                    <div id="modal-bed-type" style="font-size: 0.85rem; color: #718096; font-weight: 600;"></div>
+                </div>
+                <h2 id="modal-room-name" style="color: var(--primary); margin: 0.8rem 0 0.5rem 0; font-size: 1.6rem; line-height: 1.3;"></h2>
+            </div>
+
+            <!-- Gallery Section -->
+            <div id="room-gallery-container" style="margin-bottom: 1.5rem;">
+                <div id="main-image-container" style="position: relative; cursor: zoom-in; margin-bottom: 10px;">
+                    <img id="modal-main-img" src="" alt="Main Room Image" style="width: 100%; height: 280px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                </div>
+                <div id="thumbnail-row" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; justify-content: center;">
+                    <!-- Thumbnails will be injected here -->
+                </div>
+            </div>
+            
+            <p id="modal-room-desc" style="color: #4a5568; line-height: 1.6; text-align: center; margin-bottom: 1.5rem;"></p>
+            <div style="font-size: 1.8rem; font-weight: bold; margin: 1.5rem 0; color: var(--primary); text-align: center;">
+                ฿<span id="modal-room-price"></span> <span style="font-size: 0.9rem; color: #718096; font-weight: normal;">/ คืน</span>
+            </div>
+        
+        <hr>
+        
+        <form action="/book" method="POST" style="margin-top: 1.5rem;">
+            <input type="hidden" id="modal-room-id" name="room_id">
+            
+            <div style="margin-bottom: 1rem;">
+                <label>ชื่อ-นามสกุล:</label><br>
+                <input type="text" name="guest_name" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label>เบอร์โทรศัพท์:</label><br>
+                <input type="tel" name="guest_phone" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label>อีเมล:</label><br>
+                <input type="email" name="guest_email" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="flex: 1;">
+                    <label>เช็คอิน:</label><br>
+                    <input type="date" name="checkin_date" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label>เช็คเอาท์:</label><br>
+                    <input type="date" name="checkout_date" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn" onclick="closeModal()">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary">ยืนยันการจอง</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

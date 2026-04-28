@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 800px;">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+        <h1 style="color: var(--primary); margin: 0;">🏠 บันทึกข้อมูลรีสอร์ท</h1>
+        <span class="badge badge-verified">ตั้งค่าระบบ</span>
+    </div>
+
+    <div class="card admin-card">
+        <form action="/admin/settings" method="POST">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- Resort Name -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568;">ชื่อรีสอร์ท:</label>
+                    <input type="text" name="name" value="{{ settings.name }}" required 
+                           style="width: 100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568;">เบอร์โทรศัพท์ติดต่อ:</label>
+                    <input type="text" name="phone" value="{{ settings.phone }}" required
+                           style="width: 100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                </div>
+
+                <!-- PromptPay ID -->
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568;">รหัส PromptPay (สำหรับรับเงิน):</label>
+                    <input type="text" name="promptpay_id" value="{{ settings.promptpay_id }}" required
+                           style="width: 100%; padding: 0.8rem; border: 2px solid var(--secondary); border-radius: 8px; font-size: 1rem; color: var(--primary); font-weight: bold;">
+                    <small style="color: #718096; margin-top: 5px; display: block;">*เบอร์โทรศัพท์ หรือ เลขบัตรประชาชนที่ลงทะเบียนไว้</small>
+                </div>
+
+                <!-- Address -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568;">ที่อยู่รีสอร์ท:</label>
+                    <textarea name="address" rows="3" required
+                              style="width: 100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; font-family: inherit;">{{ settings.address }}</textarea>
+                </div>
+            </div>
+
+            <div style="margin-top: 2.5rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #edf2f7; pt: 1.5rem;">
+                <a href="/admin" class="btn" style="background: #f7fafc; border: 1px solid #e2e8f0;">ยกเลิก</a>
+                <button type="submit" class="btn btn-primary" style="padding-left: 2.5rem; padding-right: 2.5rem;">💾 บันทึกการเปลี่ยนแปลง</button>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <div class="card" style="background: #fffaf0; border: 1px solid #feebc8; border-radius: 12px; padding: 1.5rem;">
+            <h3 style="color: #9c4221; margin-top: 0; font-size: 1rem;">💡 คำแนะนำ</h3>
+            <ul style="color: #7b341e; font-size: 0.9rem; margin-bottom: 0; padding-left: 1.2rem;">
+                <li>รหัส PromptPay จะถูกนำไปใช้สร้าง QR Code ในหน้าชำระเงินโดยอัตโนมัติ</li>
+                <li>กรุณาตรวจสอบเบอร์โทรและชื่อให้ถูกต้อง เนื่องจากจะแสดงให้ลูกค้าเห็นในหน้าติดต่อและหน้าจอง</li>
+                <li>หากมีการเปลี่ยนแปลงข้อมูล ควรทดสอบสแกน QR Code เพื่อความถูกต้องทุกครั้ง</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 style="color: var(--primary);">🔍 ค้นหาข้อมูลการจอง</h1>
+    
+    <div class="card admin-card" style="margin-top: 1rem; padding: 1.5rem;">
+        <form action="/admin/search" method="GET" style="display: flex; flex-direction: column; gap: 1.2rem;">
+            <div>
+                <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">🔍 ค้นหาชื่อ/เบอร์โทร</label>
+                <input type="text" name="q" value="{{ query }}" placeholder="ชื่อลูกค้า หรือ เบอร์โทรศัพท์..." style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">📅 จากวันที่</label>
+                    <input type="date" name="start_date" value="{{ start_date }}" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">📅 ถึงวันที่</label>
+                    <input type="date" name="end_date" value="{{ end_date }}" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+            <div style="margin-top: 0.5rem;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem; font-weight: bold;">🔍 ค้นหาข้อมูล</button>
+            </div>
+        </form>
+    </div>
+
+    {% if query or (start_date and end_date) %}
+    <h3 style="margin-top: 2rem; color: var(--secondary);">
+        {% if query and start_date and end_date %}
+            ผลการค้นหาสำหรับ "{{ query }}" ช่วงวันที่ {{ start_date }} ถึง {{ end_date }}
+        {% elif query %}
+            ผลการค้นหาสำหรับ "{{ query }}"
+        {% else %}
+            ผลการค้นหาช่วงวันที่ {{ start_date }} ถึง {{ end_date }}
+        {% endif %}
+    </h3>
+    <div class="card admin-card">
+        {% if not results %}
+        <p style="color: #666; text-align: center;">ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
+        {% else %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #eee;">
+                    <th style="padding: 12px; text-align: left;">ลูกค้า</th>
+                    <th style="padding: 12px; text-align: left;">ห้อง</th>
+                    <th style="padding: 12px; text-align: left;">วันที่จอง</th>
+                    <th style="padding: 12px; text-align: left;">สถานะ</th>
+                    <th style="padding: 12px; text-align: right;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">
+                        <div>{{ r.guest_name }}</div>
+                        <div style="font-size: 0.8rem; color: #64748b;">{{ r.guest_phone }}</div>
+                    </td>
+                    <td style="padding: 12px;">{{ r.rooms.name }}</td>
+                    <td style="padding: 12px;">{{ r.checkin_date }} - {{ r.checkout_date }}</td>
+                    <td style="padding: 12px;">
+                        {% if r.status == 'pending' %}
+                            <span class="badge" style="background: #fef3c7; color: #d97706;">รอชำระเงิน</span>
+                        {% elif r.status == 'paid' %}
+                            <span class="badge" style="background: #dcfce7; color: #15803d;">ชำระเงินแล้ว</span>
+                        {% elif r.status == 'cancelled' %}
+                            <span class="badge" style="background: #fee2e2; color: #b91c1c;">ยกเลิกแล้ว</span>
+                        {% elif r.status == 'expired' %}
+                            <span class="badge" style="background: #f1f5f9; color: #64748b;">หมดอายุ</span>
+                        {% else %}
+                            <span class="badge">{{ r.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; text-align: right;">
+                        {% if r.status == 'paid' %}
+                        <a href="{{ url_for('download_receipt', booking_id=r.id) }}" class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #e2e8f0; text-decoration: none; border-radius: 5px; color: #1e293b;">📄 ใบเสร็จ</a>
+                        {% endif %}
+                        <a href="/admin/payment/{{ r.id }}" class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem; text-decoration: none;">จัดการ</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

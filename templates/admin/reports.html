@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 style="color: var(--primary);">📈 รายงานผลประกอบการ</h1>
+    <p style="color: #666;">สรุปรายรับและรายจ่ายทั้งหมดของรีสอร์ท</p>
+
+    <div style="display: flex; gap: 2rem; margin-top: 2rem;">
+        <div class="card admin-card" style="flex: 1;">
+            <h3>📊 สรุปยอดจอง (ชำระแล้ว)</h3>
+            {% set total_income = namespace(value=0) %}
+            {% for b in bookings %}{% set total_income.value = total_income.value + b.total_price %}{% endfor %}
+            <p style="font-size: 2rem; color: var(--status-available);">฿{{ total_income.value | format }}</p>
+            <p style="color: #999;">จำนวน {{ bookings | length }} รายการ</p>
+        </div>
+        <div class="card admin-card" style="flex: 1;">
+            <h3>💸 สรุปรายจ่าย</h3>
+            {% set total_expense = namespace(value=0) %}
+            {% for e in expenses %}{% set total_expense.value = total_expense.value + e.amount %}{% endfor %}
+            <p style="font-size: 2rem; color: var(--status-reserved);">฿{{ total_expense.value | format }}</p>
+            <p style="color: #999;">จำนวน {{ expenses | length }} รายการ</p>
+        </div>
+    </div>
+
+    <div class="card admin-card" style="margin-top: 2rem;">
+        <h3>💰 กำไรสุทธิ: <span style="color: var(--primary);">฿{{ (total_income.value - total_expense.value) | format }}</span></h3>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}การจองของฉัน - บ้านนารีสอร์ท{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin-top: 3rem;">
+    <div class="card" style="padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+        <h2 style="color: var(--primary); margin-bottom: 1.5rem; text-align: center;">🔍 ตรวจสอบสถานะการจอง</h2>
+        
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <p style="color: #666; margin-bottom: 1.5rem;">
+                สวัสดีคุณ <strong>{{ session.get('full_name') }}</strong><br>
+                ค้นหาประวัติการจองด้วยเบอร์โทรศัพท์ของคุณ (ต้องตรงกับที่ลงทะเบียนไว้)
+            </p>
+            <form action="/bookings" method="GET" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <input type="tel" name="phone" placeholder="ระบุเบอร์โทรศัพท์ 10 หลัก" required 
+                    pattern="\d{10}" maxlength="10" minlength="10" inputmode="numeric"
+                    style="padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; width: 300px; max-width: 100%;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">ค้นหา</button>
+            </form>
+            <div style="margin-top: 1rem;">
+                <a href="/bookings" style="font-size: 0.9rem; color: #64748b;">แสดงรายการทั้งหมดของคุณ</a>
+            </div>
+        </div>
+
+        {% if searched_phone or session.get('user_id') %}
+            {% if bookings %}
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="background: #f8fafc; text-align: left;">
+                                <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0;">ห้องพัก</th>
+                                <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0;">วันที่เข้าพัก</th>
+                                <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0;">สถานะ</th>
+                                <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0;">ยอดรวม</th>
+                                <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0;">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in bookings %}
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 1rem;">
+                                    <div style="font-weight: 600; color: var(--text-dark);">{{ b.rooms.name }}</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">ID: {{ b.id | string | truncate(8, True, '') }}</div>
+                                </td>
+                                <td style="padding: 1rem;">
+                                    {{ b.checkin_date }} - {{ b.checkout_date }}
+                                </td>
+                                <td style="padding: 1rem;">
+                                    {% if b.status == 'pending' %}
+                                        <span style="background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">รอการชำระเงิน</span>
+                                    {% elif b.status == 'paid' %}
+                                        <span style="background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">ชำระเงินเรียบร้อย</span>
+                                    {% elif b.status == 'cancelled' %}
+                                        <span style="background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">ยกเลิกแล้ว</span>
+                                    {% elif b.status == 'expired' %}
+                                        <span style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">หมดอายุ</span>
+                                    {% else %}
+                                        {{ b.status }}
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem; font-weight: 600; color: var(--primary);">
+                                    ฿{{ b.total_price | format }}
+                                </td>
+                                <td style="padding: 1rem;">
+                                    {% if b.status == 'pending' %}
+                                        <a href="/payment/{{ b.id }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                                            💳 ไปที่หน้าชำระเงิน
+                                        </a>
+                                    {% elif b.status == 'paid' %}
+                                        <a href="{{ url_for('view_receipt', booking_id=b.id) }}" target="_blank" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #e2e8f0; color: #1e293b; text-decoration: none; border-radius: 5px;">
+                                            🖨️ พิมพ์ใบเสร็จ
+                                        </a>
+                                    {% else %}
+                                        <span style="color: #94a3b8; font-size: 0.9rem;">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 3rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                    <p style="color: #64748b;">ไม่พบข้อมูลการจองที่เกี่ยวข้องกับ {% if session.get('user_id') %}บัญชีของคุณ{% else %}เบอร์โทรศัพท์ "{{ searched_phone }}"{% endif %}</p>
+                    <a href="/bookings" class="btn" style="margin-top: 1rem; background: #e2e8f0; color: #475569;">ย้อนกลับ</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

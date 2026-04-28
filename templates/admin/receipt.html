@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จรับเงิน - Baan Na Resort - #{{ booking.id | string | truncate(8, True, '') }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2f855a;
+            --secondary-color: #1a202c;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7fafc;
+            color: var(--secondary-color);
+        }
+
+        .receipt-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            padding: 3rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* PAID STAMP */
+        .paid-stamp {
+            position: absolute;
+            top: 50px;
+            right: 50px;
+            border: 4px solid #c53030;
+            color: #c53030;
+            padding: 10px 20px;
+            font-size: 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            transform: rotate(-15deg);
+            opacity: 0.2;
+            border-radius: 10px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .resort-info h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .resort-info p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .receipt-label {
+            text-align: right;
+        }
+
+        .receipt-label h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .receipt-label p {
+            margin: 5px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .detail-item {
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        .detail-item .label {
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .detail-item .value {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+
+        th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid var(--border-color);
+            color: #4a5568;
+        }
+
+        td {
+            padding: 15px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .total-section {
+            margin-top: 2rem;
+            text-align: right;
+            border-top: 2px solid #2d3748;
+            padding-top: 1rem;
+        }
+
+        .total-amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0aec0;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2rem;
+        }
+
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+
+        .btn-print {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-print:hover {
+            opacity: 0.9;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .receipt-container {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .paid-stamp {
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ใบเสร็จ</button>
+    </div>
+
+    <div class="receipt-container">
+        <!-- Paid Stamp for Visual Authenticity -->
+        <div class="paid-stamp">ชำระเงินแล้ว<br>PAID</div>
+
+        <header>
+            <div class="resort-info">
+                <h1>🌿 {{ resort.name }}</h1>
+                <p>{{ resort.address }}</p>
+                <p>โทร: {{ resort.phone }}</p>
+            </div>
+            <div class="receipt-label">
+                <h2>ใบเสร็จรับเงิน</h2>
+                <p>RECEIPT</p>
+                <div style="font-size: 0.9rem; margin-top: 10px;">
+                    เลขที่: #OFF-{{ (booking.id | string | truncate(8, True, '')).upper() }}<br>
+                    วันที่: {{ booking.created_at[:10] if booking.created_at else '' }}
+                </div>
+            </div>
+        </header>
+
+        <div class="details-grid">
+            <div class="bill-to">
+                <h3 style="margin-top: 0; color: #4a5568; font-size: 1rem; text-transform: uppercase;">ผู้รับบริการ / Customer</h3>
+                <div class="detail-item">
+                    <span class="label">ชื่อ-นามสกุล:</span>
+                    <span class="value">{{ booking.guest_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">โทรศัพท์:</span>
+                    <span class="value">{{ booking.guest_phone }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">อีเมล:</span>
+                    <span class="value">{{ booking.guest_email or '-' }}</span>
+                </div>
+            </div>
+            <div class="stay-details">
+                <h3 style="margin-top: 0; color: #4a5568; font-size: 1rem; text-transform: uppercase;">ข้อมูลการเข้าพัก / Stay Info</h3>
+                <div class="detail-item">
+                    <span class="label">เช็คอิน:</span>
+                    <span class="value">{{ booking.checkin_date }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">เช็คเอาท์:</span>
+                    <span class="value">{{ booking.checkout_date }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">จำนวนคืน:</span>
+                    <span class="value" id="night-count">-</span>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>รายการ / Description</th>
+                    <th style="text-align: right;">จำนวน / Qty</th>
+                    <th style="text-align: right;">ราคาต่อหน่วย / Price</th>
+                    <th style="text-align: right;">จำนวนเงิน / Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <strong>{{ booking.rooms.name }} (Room #{{ booking.rooms.room_number }})</strong><br>
+                        <span style="font-size: 0.8rem; color: #718096;">ประเภทเตียง: {{ 'เตียงเดี่ยว' if booking.rooms.bed_type == 'single' else 'เตียงคู่' }}</span>
+                    </td>
+                    <td style="text-align: right;" class="night-count-cell">1</td>
+                    <td style="text-align: right;">฿{{ "{:,.2f}".format(booking.rooms.price) }}</td>
+                    <td style="text-align: right; font-weight: 600;">฿{{ "{:,.2f}".format(booking.total_price) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <span style="font-size: 1.1rem; color: #718096;">ยอดรวมทั้งสิ้น (Total Amount Due):</span>
+            <div class="total-amount">฿{{ "{:,.2f}".format(booking.total_price) }}</div>
+        </div>
+
+        <footer>
+            <div style="display: flex; justify-content: space-around; margin-bottom: 2rem;">
+                <div style="width: 200px; border-bottom: 1px solid #718096; padding-bottom: 30px; text-align: center;">
+                    <p style="margin-bottom: 0; font-size: 0.8rem;">ลายเซ็นผู้รับเงิน / Receiver By</p>
+                </div>
+                <div style="width: 200px; border-bottom: 1px solid #718096; padding-bottom: 30px; text-align: center;">
+                    <p style="margin-bottom: 0; font-size: 0.8rem;">ลายเซ็นลูกค้า / Customer By</p>
+                </div>
+            </div>
+            <p>ใบเสร็จนี้ออกโดยระบบอัตโนมัติ ไม่จำเป็นต้องประทับตราบริษัทหากทำการชำระผ่านช่องทางอิเล็กทรอนิกส์แล้ว</p>
+            <p style="font-weight: bold; color: var(--primary-color);">ขอบคุณที่ใช้บริการ "บ้านนารีสอร์ท"</p>
+        </footer>
+    </div>
+
+    <script>
+        // Calculate nights
+        function calculateNights() {
+            const start = new Date('{{ booking.checkin_date }}');
+            const end = new Date('{{ booking.checkout_date }}');
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('night-count').innerText = diffDays + ' คืน';
+            document.querySelectorAll('.night-count-cell').forEach(el => el.innerText = diffDays);
+        }
+        
+        window.onload = function() {
+            calculateNights();
+            // Automatically open print dialog if not in development or on mobile sometimes
+            // setTimeout(() => window.print(), 500);
+        };
+    </script>
+</body>
+</html>

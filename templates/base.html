@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}บ้านนารีสอร์ท - Baan Na Resort{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <h2 style="margin:0;">🌿 {{ resort.name }}</h2>
+        </div>
+        <div class="nav-links">
+            <a href="/">หน้าแรก</a>
+            <a href="/map">แผนผังรีสอร์ท</a>
+            <a href="/activities">กิจกรรม & ที่เที่ยว</a>
+            {% if session.get('role') not in ['admin', 'super_admin'] %}
+            <a href="/bookings">การจองของฉัน</a>
+            {% endif %}
+
+            {% if session.get('user_id') %}
+            <span style="color: var(--accent); font-weight: 600; margin-left: 1.5rem; border-right: 2px solid rgba(255,255,255,0.2); padding-right: 1.5rem;">👋 สวัสดี, {{ session.get('full_name', 'ลูกค้า') }}</span>
+            {% if session.get('role') in ['admin', 'super_admin'] %}
+            <div class="admin-dropdown">
+                <button class="admin-dropbtn">🛠️ จัดการระบบ <i class="fas fa-caret-down"></i></button>
+                <div class="admin-dropdown-content">
+                    <div class="dropdown-group-label">📋 การจอง & ห้องพัก</div>
+                    <a href="/admin/walkin">🚶 จองห้อง Walk-in</a>
+                    <a href="/admin/search">🔍 ค้นหาการจอง</a>
+                    <a href="/admin">📊 แผงควบคุม (Dashboard)</a>
+                    
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-group-label">✍️ จัดการเนื้อหา</div>
+                    <a href="/admin/activities">📝 จัดการกิจกรรม & ที่เที่ยว</a>
+                    <a href="/admin/expenses">💰 บันทึกรายจ่าย</a>
+                    
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-group-label">⚙️ ตั้งค่าระบบ</div>
+                    <a href="/admin/settings">🏨 ข้อมูลรีสอร์ท</a>
+                    {% if session.get('role') == 'super_admin' %}
+                    <a href="/admin/users">👥 จัดการพนักงาน</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <a href="/logout">ออกจากระบบ</a>
+            {% else %}
+            <a href="/login">เข้าสู่ระบบ</a>
+            <a href="/register">ลงทะเบียน</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% if request.path.startswith('/admin') %}
+        {% include 'admin/admin_nav.html' %}
+    {% endif %}
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="container">
+              {% for category, message in messages %}
+                <div class="card" style="background-color: {% if category == 'error' %}#ffebee{% else %}#e8f5e9{% endif %}; border-left: 5px solid {% if category == 'error' %}#f44336{% else %}#4caf50{% endif %};">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer style="background: var(--secondary); color: white; padding: 2rem; text-align: center; margin-top: 4rem;">
+        <p>&copy; 2026 {{ resort.name }} - {{ resort.address }}</p>
+        <p>ติดต่อเรา: {{ resort.phone }}</p>
+    </footer>
+
+    <script>
+        function togglePassword(fieldId, btn) {
+            const field = document.getElementById(fieldId);
+            if (field.type === "password") {
+                field.type = "text";
+                btn.innerText = "🙈";
+            } else {
+                field.type = "password";
+                btn.innerText = "👁️";
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

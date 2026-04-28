@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <h2 style="color: var(--primary); text-align: center;">💳 ชำระเงินเพื่อยืนยันการจอง</h2>
+        <p style="text-align: center; color: #666;">กรุณาชำระเงินภายใน 1 ชั่วโมง มิฉะนั้นการจองจะถูกยกเลิกอัตโนมัติ</p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem;">
+            <!-- QR Code Section -->
+            <div style="flex: 1; min-width: 300px; text-align: center; border-right: 1px solid #eee; padding-right: 1rem;">
+                <h3 style="margin-bottom: 1rem;">สแกนเพื่อชำระเงิน</h3>
+                <img src="data:image/png;base64,{{ qr_code }}" alt="PromptPay QR Code" style="width: 250px; border: 1px solid #ddd; padding: 10px; border-radius: 10px;">
+                <div style="margin-top: 1rem;">
+                    <p style="font-size: 1.2rem; font-weight: bold;">จำนวนเงิน: {{ booking.total_price | float | int | format }} บาท</p>
+                    <p style="font-size: 0.9rem; color: #777;">บ้านนารีสอร์ท (พร้อมเพย์)</p>
+                </div>
+            </div>
+            
+            <!-- Upload Section -->
+            <div style="flex: 1; min-width: 300px;">
+                <h3>ส่งหลักฐานการโอน</h3>
+                <form action="/upload_slip/{{ booking.id }}" method="POST" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label>เลือกรูปภาพสลิปการโอน:</label><br>
+                        <input type="file" name="slip" accept="image/*" required style="margin-top: 0.5rem;">
+                    </div>
+                    
+                    <div class="card" style="background: #f9f9f9; padding: 1rem; font-size: 0.9rem;">
+                        <p><b>ข้อมูลการจอง:</b></p>
+                        <p>เลขที่การจอง: {{ booking.id }}</p>
+                        <p>วันที่เข้าพัก: {{ booking.checkin_date }}</p>
+                        <p>ห้องพัก: {{ booking.room_name }}</p>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">ส่งหลักฐานการชำระเงิน</button>
+                </form>
+
+                {% if session.get('role') in ['admin', 'super_admin'] %}
+                <!-- Admin Walk-in Section (Ultra-Simplified for Reliability) -->
+                <div style="margin-top: 2rem; padding: 1.5rem; border: 2px solid #3182ce; border-radius: 12px; background: #fff;">
+                    <div style="text-align: center;">
+                        <h3 style="color: #2c5282; margin-top: 0;">🛎️ สำหรับแอดมิน (Walk-in)</h3>
+                        <p style="color: #4a5568; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                            กดปุ่มด้านล่างเพื่อยืนยันว่าลูกค้าเข้าพักแล้วและชำระเงินเรียบร้อย
+                        </p>
+                        <form id="admin-walkin-form" action="/admin/walkin_confirm/{{ booking.id }}" method="POST">
+                            <button type="submit" class="btn" style="width: 100%; background: #2f855a; color: white; padding: 1.2rem; border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; border: none;">
+                                ✅ ยืนยันการเข้าพัก (Walk-in)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

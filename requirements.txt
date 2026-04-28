@@ -1,0 +1,9 @@
+flask
+supabase
+python-dotenv
+apscheduler
+reportlab
+qrcode[pil]
+promptpay
+flask-cors
+Requests

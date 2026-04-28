@@ -1,0 +1,35 @@
+<nav class="admin-navbar">
+    <div class="dropdown">
+        <a href="/admin" class="{% if request.path == '/admin' %}active{% endif %}">
+            <span class="admin-navbar-icon">📊</span> เมนูหลัก
+        </a>
+        <div class="dropdown-content">
+            <a href="/admin">📊 ภาพรวมระบบ</a>
+            <a href="/admin/rooms">🏠 จัดการห้องพัก</a>
+            <a href="/admin/resort_types">🏷️ จัดการประเภทรีสอร์ท</a>
+            <a href="/admin/settings">⚙️ บันทึกข้อมูลรีสอร์ท</a>
+        </div>
+    </div>
+    <a href="/admin/walkin" class="{% if request.path == '/admin/walkin' %}active{% endif %}">
+        <span class="admin-navbar-icon">🚶</span> จองห้อง Walk-in
+    </a>
+    <div class="dropdown">
+        <a href="#" class="{% if request.path.startswith('/admin/daily') %}active{% endif %}">
+            <span class="admin-navbar-icon">📅</span> รายการประจำวัน
+        </a>
+        <div class="dropdown-content">
+            <a href="/admin/daily_income">💰 รายรับประจำวัน</a>
+        </div>
+    </div>
+    <a href="/admin/reports" class="{% if request.path == '/admin/reports' %}active{% endif %}">
+        <span class="admin-navbar-icon">📈</span> รายงาน
+    </a>
+    <a href="/admin/search" class="{% if request.path == '/admin/search' %}active{% endif %}">
+        <span class="admin-navbar-icon">🔍</span> ค้นหา
+    </a>
+    {% if session.get('role') == 'super_admin' %}
+    <a href="/admin/users" class="{% if request.path == '/admin/users' %}active{% endif %}">
+        <span class="admin-navbar-icon">👥</span> จัดการแอดมิน
+    </a>
+    {% endif %}
+</nav>

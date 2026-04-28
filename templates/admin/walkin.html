@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Walk-in Booking - Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin-top: 2rem;">
+    <h1 style="color: var(--primary); text-align: center; margin-bottom: 2rem;">🚶 จองห้อง Walk-in (แอดมิน)</h1>
+
+    <div class="card admin-card" style="padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: var(--text-dark);">🔍 ค้นหาห้องว่าง</h3>
+        <form method="GET" action="/admin/walkin" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">วันที่เช็คอิน</label>
+                <input type="date" id="search-checkin" name="checkin_date" value="{{ checkin_date or '' }}" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">วันที่เช็คเอาท์</label>
+                <input type="date" id="search-checkout" name="checkout_date" value="{{ checkout_date or '' }}" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">ค้นหา</button>
+            </div>
+        </form>
+    </div>
+
+    {% if available_rooms != None %}
+    <div class="card admin-card" style="padding: 2rem;">
+        <h3 style="margin-top: 0; color: var(--text-dark);">🏠 ห้องที่ว่าง ({{ total_available }} ห้อง)</h3>
+        
+        {% if total_available == 0 %}
+            <p style="color: #666; text-align: center; padding: 2rem;">ไม่พบห้องว่างในช่วงเวลาที่เลือก</p>
+        {% else %}
+            {% for type_name, rooms in available_rooms.items() %}
+                <h4 style="margin-top: 2rem; color: var(--primary); border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    📂 {{ type_name }} 
+                    <span style="font-size: 0.9rem; font-weight: normal; color: #64748b;">({{ rooms|length }} ห้อง)</span>
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                    {% for room in rooms %}
+                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; background: #f8fafc; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 6px -1px rgb(0 0 0 / 0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--primary); font-size: 1.2rem;">{{ room.name }}</h4>
+                                <span style="font-size: 0.85rem; color: #64748b;">
+                                    {% if room.room_number %}#{{ room.room_number }}{% endif %}
+                                    | {{ '🛌 เตียงคู่' if room.bed_type == 'double' else '👤 เตียงเดียว' }}
+                                </span>
+                            </div>
+                            <div style="font-weight: bold; color: var(--text-dark);">
+                                ฿{{ room.price | format }} / คืน
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary" style="width: 100%;" onclick="openWalkinModal('{{ room.id }}', '{{ room.name }}', {{ room.price }})">
+                            เลือกห้องนี้
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Walk-in Modal -->
+<div id="walkin-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <h2 style="color: var(--primary); margin-top: 0; text-align: center;">ทำรายการ Walk-in</h2>
+        <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: #f1f5f9; border-radius: 8px;">
+            <div id="modal-room-name" style="font-size: 1.2rem; font-weight: bold; color: var(--text-dark);"></div>
+            <div style="color: #64748b; font-size: 0.9rem;">
+                <span id="modal-dates"></span>
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 1.1rem; color: var(--primary); font-weight: bold;">
+                รวมสุทธิ: ฿<span id="modal-total-price"></span>
+            </div>
+        </div>
+
+        <form action="/admin/walkin" method="POST">
+            <input type="hidden" id="walkin-room-id" name="room_id">
+            <input type="hidden" id="walkin-checkin" name="checkin_date" value="{{ checkin_date }}">
+            <input type="hidden" id="walkin-checkout" name="checkout_date" value="{{ checkout_date }}">
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.3rem;">ชื่อ-นามสกุล ลูกค้า <span style="color: red;">*</span></label>
+                <input type="text" name="guest_name" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.3rem;">เบอร์โทรศัพท์ (10 หลัก) <span style="color: red;">*</span></label>
+                <input type="tel" name="guest_phone" required 
+                    pattern="\d{10}" maxlength="10" minlength="10" 
+                    inputmode="numeric" placeholder="08XXXXXXXX"
+                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.3rem;">อีเมล (ถ้ามี)</label>
+                <input type="email" name="guest_email" placeholder="walkin@bannaresort.com" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn" style="flex: 1; background: #e2e8f0; color: #475569;" onclick="closeWalkinModal()">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary" style="flex: 2;">ยืนยันการรับเงินและเข้าพัก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        
+        const searchCheckin = document.getElementById('search-checkin');
+        const searchCheckout = document.getElementById('search-checkout');
+        
+        if (!searchCheckin.value) {
+            searchCheckin.value = todayStr;
+        }
+        if (!searchCheckout.value) {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const t_yyyy = tomorrow.getFullYear();
+            const t_mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const t_dd = String(tomorrow.getDate()).padStart(2, '0');
+            searchCheckout.value = `${t_yyyy}-${t_mm}-${t_dd}`;
+        }
+    });
+
+    function openWalkinModal(roomId, roomName, pricePerNight) {
+        const checkin = document.getElementById('search-checkin').value;
+        const checkout = document.getElementById('search-checkout').value;
+        
+        if (!checkin || !checkout) {
+            alert("กรุณาระบุวันที่ให้ครบถ้วน");
+            return;
+        }
+
+        const d1 = new Date(checkin);
+        const d2 = new Date(checkout);
+        const diffTime = Math.abs(d2 - d1);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (diffDays <= 0) {
+            alert("วันที่เช็คเอาท์ต้องมากกว่าวันเช็คอิน");
+            return;
+        }
+
+        const totalPrice = pricePerNight * diffDays;
+
+        document.getElementById('walkin-room-id').value = roomId;
+        document.getElementById('walkin-checkin').value = checkin;
+        document.getElementById('walkin-checkout').value = checkout;
+        document.getElementById('modal-room-name').innerText = roomName;
+        document.getElementById('modal-dates').innerText = `${checkin} ถึง ${checkout} (${diffDays} คืน)`;
+        document.getElementById('modal-total-price').innerText = totalPrice.toLocaleString();
+        
+        document.getElementById('walkin-modal').style.display = 'flex';
+    }
+
+    function closeWalkinModal() {
+        document.getElementById('walkin-modal').style.display = 'none';
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2rem;">
+        <h1 style="color: var(--primary);">🏠 จัดการห้องพัก</h1>
+        <button class="btn btn-primary" onclick="document.getElementById('add-room-modal').style.display='block'">+ เพิ่มห้องพักใหม่</button>
+    </div>
+
+    <!-- Rooms Table -->
+    <div class="card admin-card">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #f1f1f1; text-align: left; color: #718096; font-size: 0.85rem;">
+                    <th style="padding: 1rem;">รูปห้อง</th>
+                    <th style="padding: 1rem;">หมายเลข / ชื่อ</th>
+                    <th style="padding: 1rem;">ประเภทเตียง</th>
+                    <th style="padding: 1rem;">ราคา</th>
+                    <th style="padding: 1rem;">สถานะ</th>
+                    <th style="padding: 1rem; text-align: center;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for room in rooms %}
+                <tr class="table-row" style="border-bottom: 1px solid #f8f8f8;">
+                    <td style="padding: 1rem;">
+                        {% if room.images and room.images is iterable and room.images is not string and room.images | length > 0 %}
+                        <img src="{{ room.images[0] }}" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #eee;">
+                        {% else %}
+                        <div style="width: 80px; height: 60px; background: #f7fafc; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🖼️</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1.2rem;">
+                        <div style="font-weight: bold; color: var(--primary);">#{{ room.room_number or room.id }}</div>
+                        <div style="font-size: 0.9rem; color: #4a5568;">{{ room.name }}</div>
+                        {% if room.resort_types and room.resort_types is mapping %}
+                        <div style="margin-top: 4px;"><span class="badge" style="background: #e2e8f0; color: #4a5568; padding: 2px 6px; font-size: 0.7rem;">🏷️ {{ room.resort_types.name }}</span></div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1.2rem;">
+                        {% if room.bed_type == 'double' %}
+                        <span class="badge" style="background: #ebf8ff; color: #2b6cb0;">🛌 เตียงคู่</span>
+                        {% else %}
+                        <span class="badge" style="background: #fff5f5; color: #c53030;">👤 เตียงเดียว</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1.2rem; font-weight: bold; color: var(--secondary);">฿{{ room.price | format }}</td>
+                    <td style="padding: 1.2rem;">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            {% if room.status == 'I' %}
+                            <span class="badge" style="background: #e6fffa; color: #234e52; border: 1px solid #38b2ac; text-align: center;">✅ ว่าง (I)</span>
+                            {% elif room.status == 'R' %}
+                            <span class="badge" style="background: #fff5f5; color: #9b2c2c; border: 1px solid #e53e3e; text-align: center;">⏰ ติดจอง (R)</span>
+                            {% elif room.status == 'O' %}
+                            <span class="badge" style="background: #edf2f7; color: #2d3748; border: 1px solid #a0aec0; text-align: center;">🚫 ไม่ว่าง (O)</span>
+                            {% endif %}
+                            
+                            <form action="/admin/update_room_status/{{ room.id }}" method="POST">
+                                <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.75rem; background: white;">
+                                    <option value="" disabled selected>เปลี่ยนสถานะ...</option>
+                                    <option value="I" {% if room.status == 'I' %}selected{% endif %}>ว่าง (I)</option>
+                                    <option value="R" {% if room.status == 'R' %}selected{% endif %}>ติดจอง (R)</option>
+                                    <option value="O" {% if room.status == 'O' %}selected{% endif %}>ไม่ว่าง (O)</option>
+                                </select>
+                            </form>
+                        </div>
+                    </td>
+                    <td style="padding: 1.2rem; text-align: center;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            {% if room.status == 'I' %}
+                            <button class="btn" onclick="openAdminBooking('{{ room.id }}', '{{ room.name }}', '{{ room.price }}')" style="background: var(--primary); color: white; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px;">จอง</button>
+                            {% endif %}
+                            <button class="btn" onclick='openEditModal({{ room | tojson | safe }})' style="background: #e2e8f0; color: #4a5568; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px;">แก้ไข</button>
+                            <button class="btn" style="background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px;" 
+                                    onclick="confirmDeleteRoom('{{ room.id }}', '{{ room.name }}')">ลบ</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+</div>
+
+<!-- Add Room Modal -->
+<div id="add-room-modal" class="modal">
+    <div class="modal-content admin-card" style="max-width: 600px;">
+        <h2 style="color: var(--primary); margin-top: 0;">➕ เพิ่มห้องพักใหม่</h2>
+        <form action="/admin/add_room" method="POST" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+            <div class="admin-form-grid">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">หมายเลขห้อง:</label>
+                    <input type="text" name="room_number" required placeholder="เช่น 101" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ชื่อเรียกห้อง:</label>
+                    <input type="text" name="name" required placeholder="เช่น บ้านร่มไม้" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ประเภทเตียง:</label>
+                    <select name="bed_type" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <option value="single">เตียงเดียว</option>
+                        <option value="double">เตียงคู่</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ประเภทรีสอร์ท:</label>
+                    <select name="resort_type_id" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <option value="">-- ไม่ระบุ --</option>
+                        {% for t in resort_types %}
+                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ราคา/คืน (บาท):</label>
+                    <input type="number" name="price" required style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">รายละเอียด:</label>
+                <textarea name="description" rows="3" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">รูปภาพห้องพัก (เลือกได้หลายรูป):</label>
+                <input type="file" name="images" multiple accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #f7fafc;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn" onclick="document.getElementById('add-room-modal').style.display='none'">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">บันทึกห้องพัก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Room Modal -->
+<div id="edit-room-modal" class="modal">
+    <div class="modal-content admin-card" style="max-width: 600px;">
+        <h2 style="color: var(--primary); margin-top: 0;">📝 แก้ไขข้อมูลห้องพัก</h2>
+        <form id="edit-room-form" action="" method="POST" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+            <div class="admin-form-grid">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">หมายเลขห้อง:</label>
+                    <input type="text" name="room_number" id="edit-room-number" required style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ชื่อเรียกห้อง:</label>
+                    <input type="text" name="name" id="edit-room-name" required style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ประเภทเตียง:</label>
+                    <select name="bed_type" id="edit-bed-type" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <option value="single">เตียงเดียว</option>
+                        <option value="double">เตียงคู่</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ประเภทรีสอร์ท:</label>
+                    <select name="resort_type_id" id="edit-resort-type" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <option value="">-- ไม่ระบุ --</option>
+                        {% for t in resort_types %}
+                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568;">ราคา/คืน (บาท):</label>
+                    <input type="number" name="price" id="edit-room-price" required style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">รายละเอียด:</label>
+                <textarea name="description" id="edit-room-desc" rows="3" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">เพิ่มรูปภาพเพิ่มเติม:</label>
+                <input type="file" name="images" multiple accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #f7fafc;">
+                <p style="font-size: 0.8rem; color: #718096; margin-top: 5px;">* รูปภาพใหม่จะถูกเพิ่มต่อจากรูปภาพเดิม</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                <!-- Delete Button inside Form Area (using separate small form or JS) -->
+                <button type="button" id="btn-delete-room-modal" class="btn" style="background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e;">🗑️ ลบห้องพักนี้</button>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn" onclick="document.getElementById('edit-room-modal').style.display='none'">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">บันทึกการแก้ไข</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Admin Booking Modal -->
+<div id="admin-booking-modal" class="modal">
+    <div class="modal-content admin-card" style="max-width: 500px;">
+        <h2 style="color: var(--primary); margin-top: 0;">🛎️ จองห้องพัก (Admin)</h2>
+        <p id="admin-book-room-title" style="font-weight: bold; color: var(--secondary); margin-bottom: 1.5rem;"></p>
+        
+        <form action="/book" method="POST">
+            <input type="hidden" id="admin-book-room-id" name="room_id">
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">ชื่อลูกค้่า:</label>
+                <input type="text" name="guest_name" required placeholder="ชื่อ-นามสกุล" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">เบอร์โทรศัพท์:</label>
+                <input type="tel" name="guest_phone" required placeholder="08xxxxxxxx" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">อีเมล (ถ้ามี):</label>
+                <input type="email" name="guest_email" placeholder="email@example.com" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">วันที่เข้าพัก:</label>
+                    <input type="date" name="checkin_date" id="admin-book-checkin" required onchange="updateAdminBookingSummary()" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">วันที่ออก:</label>
+                    <input type="date" name="checkout_date" id="admin-book-checkout" required onchange="updateAdminBookingSummary()" style="width: 100%; padding: 0.7rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+            </div>
+
+            <!-- Summary Display -->
+            <div id="admin-book-summary" style="background: #f8fafc; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; display: none; border: 1px dashed var(--primary);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>จำนวนคืน:</span>
+                    <span id="admin-book-nights" style="font-weight: bold; color: var(--primary);">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.2rem;">
+                    <span>ยอดรวมทั้งสิ้น:</span>
+                    <span style="font-weight: bold; color: var(--secondary);">฿<span id="admin-book-total">0</span></span>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn" onclick="document.getElementById('admin-booking-modal').style.display='none'">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">ยืนยันการจอง</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentGuestRoomPrice = 0;
+
+function openAdminBooking(roomId, roomName, roomPrice) {
+    currentGuestRoomPrice = parseFloat(roomPrice) || 0;
+    document.getElementById('admin-book-room-id').value = roomId;
+    document.getElementById('admin-book-room-title').innerText = "กำลังทำการจอง: " + roomName + " (คืนละ ฿" + currentGuestRoomPrice.toLocaleString() + ")";
+    
+    // Set default dates (today and tomorrow)
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    document.getElementById('admin-book-checkin').value = today;
+    document.getElementById('admin-book-checkout').value = tomorrowStr;
+    
+    document.getElementById('admin-booking-modal').style.display = 'flex';
+    updateAdminBookingSummary();
+}
+
+function updateAdminBookingSummary() {
+    const checkin = document.getElementById('admin-book-checkin').value;
+    const checkout = document.getElementById('admin-book-checkout').value;
+    const summaryBox = document.getElementById('admin-book-summary');
+    
+    if (checkin && checkout) {
+        const start = new Date(checkin);
+        const end = new Date(checkout);
+        const timeDiff = end - start;
+        const days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        
+        if (days >= 1) {
+            summaryBox.style.display = 'block';
+            document.getElementById('admin-book-nights').innerText = days + " คืน";
+            document.getElementById('admin-book-total').innerText = (days * currentGuestRoomPrice).toLocaleString();
+        } else {
+            summaryBox.style.display = 'none';
+        }
+    } else {
+        summaryBox.style.display = 'none';
+    }
+}
+
+function openEditModal(room) {
+    const modal = document.getElementById('edit-room-modal');
+    const form = document.getElementById('edit-room-form');
+    
+    form.action = `/admin/edit_room/${room.id}`;
+    document.getElementById('edit-room-number').value = room.room_number || '';
+    document.getElementById('edit-room-name').value = room.name || '';
+    document.getElementById('edit-bed-type').value = room.bed_type || 'single';
+    document.getElementById('edit-resort-type').value = room.resort_type_id || '';
+    document.getElementById('edit-room-price').value = room.price || '';
+    document.getElementById('edit-room-desc').value = room.description || '';
+    
+    // Set up delete button
+    const deleteBtn = document.getElementById('btn-delete-room-modal');
+    if (deleteBtn) {
+        deleteBtn.onclick = function() {
+            confirmDeleteRoom(room.id, room.name);
+        };
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function confirmDeleteRoom(roomId, roomName) {
+    if (confirm("ยืนยันการปิดใช้งานห้องพัก '" + roomName + "' ?\n\nห้องพักนี้จะไม่แสดงบนหน้าเว็บอีก แต่ข้อมูลการจองเดิมจะยังคงถูกเก็บรักษาไว้ในระบบ")) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete_room/${roomId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('add-room-modal');
+    const bookModal = document.getElementById('admin-booking-modal');
+    const editModal = document.getElementById('edit-room-modal');
+    if (event.target == addModal) {
+        addModal.style.display = "none";
+    }
+    if (event.target == bookModal) {
+        bookModal.style.display = "none";
+    }
+    if (event.target == editModal) {
+        editModal.style.display = "none";
+    }
+}
+</script>
+{% endblock %}

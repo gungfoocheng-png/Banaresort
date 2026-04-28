@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}จัดการกิจกรรมและสถานที่ท่องเที่ยว - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 1000px; margin: 2rem auto; padding: 0 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--primary); margin: 0;">🛠️ จัดการกิจกรรมและสถานที่ท่องเที่ยว</h2>
+        <a href="/admin" class="btn btn-outline" style="text-decoration: none;">กลับหน้าแอดมิน</a>
+    </div>
+
+    <!-- Add/Edit Form -->
+    <div id="form-card" class="card" style="background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 3rem; border-top: 5px solid var(--primary);">
+        <h3 id="form-title" style="margin-top: 0; color: var(--primary); border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">➕ เพิ่มข้อมูลใหม่</h3>
+        <form id="activity-form" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" id="form-action" value="add">
+            <input type="hidden" name="id" id="item-id" value="">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">ชื่อกิจกรรม/สถานที่ <span style="color: red;">*</span></label>
+                    <input type="text" name="name" id="field-name" required class="form-control" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">หมวดหมู่</label>
+                    <select name="category" id="field-category" class="form-control" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="activity">🎯 กิจกรรมในรีสอร์ท</option>
+                        <option value="attraction">🏞️ สถานที่ท่องเที่ยวใกล้เคียง</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">รายละเอียด</label>
+                    <textarea name="description" id="field-description" rows="3" class="form-control" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">อัปโหลดรูปภาพ (เลือกได้หลายรูป สูงสุด 10 รูป)</label>
+                    <input type="file" name="images" id="field-images" multiple accept="image/*" class="form-control" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    <p id="edit-images-hint" style="display: none; font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">* หากไม่เลือกไฟล์ใหม่ ระบบจะใช้รูปเดิมที่มีอยู่</p>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">ลิงก์ Google Maps (ถ้ามี)</label>
+                    <input type="url" name="location_url" id="field-location_url" placeholder="https://goo.gl/maps/..." class="form-control" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="is_active" id="field-is_active" checked style="width: 20px; height: 20px;">
+                    <label for="field-is_active" style="font-weight: 600;">แสดงผลบนหน้าเว็บ</label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" id="submit-btn" class="btn btn-primary" style="flex: 2; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">บันทึกข้อมูล</button>
+                <button type="button" id="cancel-edit" onclick="resetForm()" style="display: none; flex: 1; padding: 1rem; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">ยกเลิก</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- List -->
+    <h3 style="color: var(--primary); margin-bottom: 1rem;">📋 รายการปัจจุบัน</h3>
+    <div style="display: grid; gap: 1rem;">
+        {% for item in attractions %}
+        <div class="card" style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                {% if item.images and item.images|length > 0 %}
+                <img src="{{ item.images[0] }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                {% else %}
+                <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8;">No Image</div>
+                {% endif %}
+                <div>
+                    <div style="font-weight: 600; font-size: 1.1rem;">{{ item.name }}</div>
+                    <div style="font-size: 0.9rem; color: #64748b;">
+                        {{ '🎯 กิจกรรม' if item.category == 'activity' else '🏞️ สถานที่ท่องเที่ยว' }} 
+                        | {{ '✅ แสดงผล' if item.is_active else '❌ ซ่อน' }}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="button" onclick='editItem({{ item | tojson }})' style="background: #e0f2fe; color: #0369a1; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">แก้ไข</button>
+                <form method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?')">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="{{ item.id }}">
+                    <button type="submit" style="background: #fee2e2; color: #ef4444; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">ลบ</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: #64748b; padding: 2rem;">ยังไม่มีข้อมูลในระบบ</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function editItem(item) {
+        // Change form header and action
+        document.getElementById('form-title').innerText = '📝 แก้ไขข้อมูล';
+        document.getElementById('form-action').value = 'edit';
+        document.getElementById('item-id').value = item.id;
+        document.getElementById('submit-btn').innerText = 'บันทึกการแก้ไข';
+        document.getElementById('cancel-edit').style.display = 'block';
+        document.getElementById('form-card').style.borderTopColor = 'var(--accent)';
+        document.getElementById('edit-images-hint').style.display = 'block';
+
+        // Populate fields
+        document.getElementById('field-name').value = item.name;
+        document.getElementById('field-category').value = item.category;
+        document.getElementById('field-description').value = item.description || '';
+        document.getElementById('field-location_url').value = item.location_url || '';
+        document.getElementById('field-is_active').checked = item.is_active;
+
+        // Scroll to form
+        document.getElementById('form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetForm() {
+        document.getElementById('form-title').innerText = '➕ เพิ่มข้อมูลใหม่';
+        document.getElementById('form-action').value = 'add';
+        document.getElementById('item-id').value = '';
+        document.getElementById('submit-btn').innerText = 'บันทึกข้อมูล';
+        document.getElementById('cancel-edit').style.display = 'none';
+        document.getElementById('form-card').style.borderTopColor = 'var(--primary)';
+        document.getElementById('edit-images-hint').style.display = 'none';
+        document.getElementById('activity-form').reset();
+    }
+</script>
+{% endblock %}

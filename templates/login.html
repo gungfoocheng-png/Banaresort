@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 400px; margin: 4rem auto; padding: 2rem;">
+        <h2 style="text-align: center; color: var(--primary);">🌿 เข้าสู่ระบบ</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 2rem;">สำหรับเจ้าหน้าที่และลูกค้า</p>
+        
+        <form action="/login" method="POST">
+            <div style="margin-bottom: 1.5rem;">
+                <label>อีเมล:</label><br>
+                <input type="email" name="email" required style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label>รหัสผ่าน:</label><br>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="password" name="password" required style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px; padding-right: 45px; box-sizing: border-box;">
+                    <button type="button" onclick="togglePassword('password', this)" style="position: absolute; right: 5px; background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; color: #718096;">👁️</button>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">เข้าสู่ระบบ</button>
+        </form>
+        
+        <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+            <p>ลืมรหัสผ่าน? <a href="/forgot-password" style="color: var(--primary);">คลิกที่นี่เพื่อรีเซ็ต</a></p>
+            <p>ยังไม่มีบัญชี? <a href="/register" style="color: var(--primary);">ลงทะเบียนที่นี่</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
