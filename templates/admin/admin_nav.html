@@ -1,15 +1,7 @@
 <nav class="admin-navbar">
-    <div class="dropdown">
-        <a href="/admin" class="{% if request.path == '/admin' %}active{% endif %}">
-            <span class="admin-navbar-icon">📊</span> เมนูหลัก
-        </a>
-        <div class="dropdown-content">
-            <a href="/admin">📊 ภาพรวมระบบ</a>
-            <a href="/admin/rooms">🏠 จัดการห้องพัก</a>
-            <a href="/admin/resort_types">🏷️ จัดการประเภทรีสอร์ท</a>
-            <a href="/admin/settings">⚙️ บันทึกข้อมูลรีสอร์ท</a>
-        </div>
-    </div>
+    <a href="/admin" class="{% if request.path == '/admin' %}active{% endif %}">
+        <span class="admin-navbar-icon">📊</span> เมนูหลัก
+    </a>
     <a href="/admin/walkin" class="{% if request.path == '/admin/walkin' %}active{% endif %}">
         <span class="admin-navbar-icon">🚶</span> จองห้อง Walk-in
     </a>
