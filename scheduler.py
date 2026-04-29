@@ -77,9 +77,11 @@ def check_completed_bookings():
             .execute()
             
         for b in (res.data or []):
-            # Revert room status to 'I'
+            # Revert room status to 'I' (ว่าง)
             update_room_status(b['room_id'], "I")
-            # Optional: update_booking_status(b['id'], "completed")
+            # Mark booking as completed
+            update_booking_status(b['id'], "completed")
+            logger.info(f"Booking {b['id']} completed, room {b['room_id']} set to available.")
             
     except Exception as e:
         logger.error(f"Error cleaning up completed bookings: {e}")
@@ -88,8 +90,8 @@ def start_scheduler():
     scheduler = BackgroundScheduler()
     # Check every minute for expired payments
     scheduler.add_job(check_expired_bookings, 'interval', minutes=1)
-    # Check every hour for completed stays
-    scheduler.add_job(check_completed_bookings, 'interval', hours=1)
+    # Check every 15 minutes for completed stays (after 9:00 AM on checkout day)
+    scheduler.add_job(check_completed_bookings, 'interval', minutes=15)
     scheduler.start()
     logger.info("Background scheduler started (1-minute interval).")
     return scheduler
