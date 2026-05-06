@@ -1,0 +1,19 @@
+[
+  {
+    "id": 5,
+    "name": "ทองเจือ",
+    "price": 899.0,
+    "status": "I",
+    "created_at": "2026-04-27T16:34:20.001509+00:00",
+    "resort_type_id": 4,
+    "room_number": "A105",
+    "bed_type": "double",
+    "description": "• 1 ห้องนอน 1 ห้องน้ำ | 28.5 ตร.ม. | ชั้น 7\r\n• ห้องขนาดกำลังดี ฟังก์ชันครบ เหมาะอยู่คนเดียวหรือคู่\r\n🛋 เฟอร์นิเจอร์ครบ\r\n• เตียง + ที่นอน 5 ฟุต\r\n• ตู้เสื้อผ้า | โซฟา + โต๊ะกลาง\r\n• โต๊ะกินข้าว + เก้าอี้\r\n• ชั้นวางทีวี | โต๊ะหัวเตียง\r\n• ผ้าม่าน UV\r\n• เคาน์เตอร์ครัว + ตู้แขวน\r\n⚡ เครื่องใช้ไฟฟ้าครบ\r\n• แอร์ 2 ตัว\r\n• ทีวี | ตู้เย็น\r\n• ไมโครเวฟ\r\n• เครื่องทำน้ำอุ่น\r\n• เครื่องซักผ้าฝาหน้า\r\n✨ จุดเด่นเพิ่มเติม\r\n• มีตาข่ายกันนก",
+    "images": [
+      "https://scjkynritbvirnjqncra.supabase.co/storage/v1/object/public/room_images/64f275af-f244-4b44-a91e-9004215066ca.jpg?",
+      "https://scjkynritbvirnjqncra.supabase.co/storage/v1/object/public/room_images/04163664-4478-4cf0-aee9-ac8e92fab5d5.jpg?",
+      "https://scjkynritbvirnjqncra.supabase.co/storage/v1/object/public/room_images/e27a48ba-91a8-4c90-a2ca-9133187f02f4.jpg?",
+      "https://scjkynritbvirnjqncra.supabase.co/storage/v1/object/public/room_images/c7b6840d-018d-4193-be3b-67961b979cd1.jpg?"
+    ]
+  }
+]

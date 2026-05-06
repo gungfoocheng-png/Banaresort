@@ -7,6 +7,10 @@ from datetime import datetime, timedelta, timezone
 import os
 import io
 import uuid
+import os
+import io
+import uuid
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -60,21 +64,26 @@ def inject_resort_info():
 
 @app.before_request
 def refresh_session_role():
-    # Helper to refresh role from DB if user is logged in
-    # This prevents stale session roles if an admin's role was changed in DB
+    # Use direct httpx call to avoid supabase client auth state pollution
     if session.get('user_id') and not request.path.startswith('/static') and not request.path.startswith('/api'):
         try:
-            # Use a faster, simpler query
-            profile = admin_supabase.table("profiles").select("role, full_name, display_name, phone").eq("id", session['user_id']).execute()
-            print(f"DEBUG before_request: profile.data={profile.data}")
-            if profile.data and isinstance(profile.data, list) and len(profile.data) > 0:
-                prof = profile.data[0]
-                session['role'] = prof['role']
+            import httpx
+            _supabase_url = os.getenv('SUPABASE_URL')
+            _service_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+            resp = httpx.get(
+                f"{_supabase_url}/rest/v1/profiles",
+                params={"id": f"eq.{session['user_id']}", "select": "role,full_name,display_name,phone"},
+                headers={"Authorization": f"Bearer {_service_key}", "apikey": _service_key},
+                timeout=5.0
+            )
+            data = resp.json()
+            if data and isinstance(data, list) and len(data) > 0:
+                prof = data[0]
+                session['role'] = prof.get('role', 'customer')
                 session['full_name'] = prof.get('display_name') or prof.get('full_name') or 'Guest'
                 session['phone'] = prof.get('phone') or ''
-            print(f"DEBUG before_request: session role set to {session.get('role')}")
+                print(f"DEBUG before_request: role={session['role']} for user={session.get('email')}")
         except Exception as e:
-            # Log error but don't block the request
             print(f"Role refresh error for {session.get('email')}: {e}")
 
 @app.route('/debug_session')
@@ -178,16 +187,25 @@ def login():
             session['user_id'] = res.user.id
             session['email'] = res.user.email
             
-            # Fetch profile for role
+            # Fetch profile for role using direct HTTP to avoid auth state pollution
             try:
-                profile_resp = admin_supabase.table("profiles").select("role, full_name, display_name, phone").eq("id", res.user.id).execute()
+                import httpx as _httpx
+                _supa_url = os.getenv('SUPABASE_URL')
+                _svc_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+                _resp = _httpx.get(
+                    f"{_supa_url}/rest/v1/profiles",
+                    params={"id": f"eq.{res.user.id}", "select": "role,full_name,display_name,phone"},
+                    headers={"Authorization": f"Bearer {_svc_key}", "apikey": _svc_key},
+                    timeout=5.0
+                )
+                _pdata = _resp.json()
                 
-                if profile_resp.data and isinstance(profile_resp.data, list) and len(profile_resp.data) > 0:
-                    prof = profile_resp.data[0]
-                    session['role'] = prof['role']
+                if _pdata and isinstance(_pdata, list) and len(_pdata) > 0:
+                    prof = _pdata[0]
+                    session['role'] = prof.get('role', 'customer')
                     session['full_name'] = prof.get('display_name') or prof.get('full_name') or 'Guest'
                     session['phone'] = prof.get('phone') or ''
-                    print(f"Login Success: {email}, Name: {session['full_name']}") # Debug log
+                    print(f"Login Success: {email}, Role: {session['role']}")
                 else:
                     # Self-healing: create profile if missing
                     print(f"Profile not found for {email}, creating customer profile.")
@@ -199,7 +217,7 @@ def login():
                     }).execute()
                     session['role'] = 'customer'
             except Exception as profile_err:
-                print(f"Profile lookup error for {email}: {profile_err}")
+                print(f"Profile lookup error for {email}: {type(profile_err).__name__}")
                 session['role'] = 'customer' # Fallback
             
             flash("เข้าสู่ระบบสำเร็จ", "success")
@@ -338,7 +356,23 @@ def view_bookings():
 
 @app.route('/api/rooms')
 def api_rooms():
-    return jsonify(get_current_status_rooms())
+    rooms = get_current_status_rooms()
+    
+    # Load map coords
+    map_coords = {}
+    try:
+        if os.path.exists('data/map_coords.json'):
+            with open('data/map_coords.json', 'r', encoding='utf-8') as f:
+                map_coords = json.load(f)
+    except Exception as e:
+        print(f"Error loading map_coords: {e}")
+        
+    for room in rooms:
+        room_id_str = str(room['id'])
+        if room_id_str in map_coords:
+            room['map_coords'] = map_coords[room_id_str]
+            
+    return jsonify(rooms)
 
 @app.route('/api/check_availability', methods=['POST'])
 def api_check_availability():
@@ -585,6 +619,26 @@ def admin_dashboard():
                            pending_payments=pending_payments,
                            bookings=bookings,
                            expenses=expenses)
+
+@app.route('/admin/map')
+def admin_map_editor():
+    if not is_admin(): return redirect(url_for('login'))
+    return render_template('admin/map_editor.html')
+
+@app.route('/api/admin/save_map_coords', methods=['POST'])
+def save_map_coords():
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    coords_data = request.json
+    try:
+        os.makedirs('data', exist_ok=True)
+        with open('data/map_coords.json', 'w', encoding='utf-8') as f:
+            json.dump(coords_data, f, ensure_ascii=False, indent=2)
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Error saving map_coords: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/walkin', methods=['GET', 'POST'])
 def admin_walkin():
