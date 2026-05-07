@@ -759,6 +759,7 @@ def admin_walkin():
 
 @app.route('/admin/daily')
 def admin_daily():
+    if not is_admin(): return redirect(url_for('login'))
     # Fetch bookings and filter in Python to avoid syntax issues with OR filters
     today = datetime.now().strftime('%Y-%m-%d')
     resp = admin_supabase.table("bookings").select("*, rooms(*)").order("created_at", desc=True).limit(50).execute()
@@ -766,7 +767,12 @@ def admin_daily():
     daily_bookings = [b for b in resp.data if b['checkin_date'] == today or b['checkout_date'] == today]
     return render_template('admin/daily.html', bookings=daily_bookings, datetime=datetime)
 
-    expenses = admin_supabase.table("expenses").select("*").execute().data
+@app.route('/admin/reports')
+def admin_reports():
+    if not is_admin(): return redirect(url_for('login'))
+    # Only fetch 'paid' bookings for the income summary
+    bookings = admin_supabase.table("bookings").select("*").eq("status", "paid").execute().data or []
+    expenses = admin_supabase.table("expenses").select("*").execute().data or []
     return render_template('admin/reports.html', bookings=bookings, expenses=expenses)
 
 @app.route('/admin/daily_income')
@@ -871,37 +877,92 @@ def admin_search():
     query = request.args.get('q', '')
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
+    room_id = request.args.get('room_id', '')
     results = []
+    occupied_dates = []
     
-    if query or (start_date and end_date):
+    # Fetch all rooms for the dropdown
+    rooms_list = admin_supabase.table("rooms").select("id, name, room_number").neq("status", "F").order("name").execute().data
+    
+    if query or (start_date and end_date) or room_id:
         all_results = []
         
-        # 1. Text Search
+        # 1. Text Search (Expanded to include room details)
         if query:
-            # Search by name and phone separately and combine
+            # Search by guest name and phone
             res_name = admin_supabase.table("bookings").select("*, rooms(*)").ilike("guest_name", f"%{query}%").execute().data
             res_phone = admin_supabase.table("bookings").select("*, rooms(*)").ilike("guest_phone", f"%{query}%").execute().data
+            
+            # Search by room name and room number (using !inner to filter by joined table)
+            try:
+                res_room_name = admin_supabase.table("bookings").select("*, rooms!inner(*)").ilike("rooms.name", f"%{query}%").execute().data
+                res_room_num = admin_supabase.table("bookings").select("*, rooms!inner(*)").ilike("rooms.room_number", f"%{query}%").execute().data
+                if res_room_name: all_results.extend(res_room_name)
+                if res_room_num: all_results.extend(res_room_num)
+            except Exception as e:
+                print(f"Room search join error: {e}")
+
             if res_name: all_results.extend(res_name)
             if res_phone: all_results.extend(res_phone)
             
-        # 2. Date Range Search (Overlap logic)
+        # 2. Room Filter
+        if room_id:
+            res_room = admin_supabase.table("bookings").select("*, rooms(*)").eq("room_id", room_id).execute().data
+            if res_room: 
+                if not all_results: # If only room_id is provided, use this
+                    all_results.extend(res_room)
+                else: # Intersect with existing results if query or date range also provided
+                    existing_ids = {r['id'] for r in all_results}
+                    all_results = [r for r in res_room if r['id'] in existing_ids]
+
+        # 3. Date Range Search (Overlap logic)
         if start_date and end_date:
             res_date = admin_supabase.table("bookings")\
                 .select("*, rooms(*)")\
                 .lt("checkin_date", end_date)\
                 .gt("checkout_date", start_date)\
                 .execute().data
-            if res_date: all_results.extend(res_date)
+            
+            if not all_results and not query and not room_id:
+                all_results.extend(res_date)
+            else:
+                # Intersect
+                date_ids = {r['id'] for r in res_date}
+                all_results = [r for r in all_results if r['id'] in date_ids]
         
         # Merge results and remove duplicates by ID
         combined = {r['id']: r for r in all_results}
         results = sorted(combined.values(), key=lambda x: x.get('created_at', ''), reverse=True)
+
+        # If a specific room is selected, calculate all its occupied dates (even outside search range)
+        if room_id:
+            upcoming_bookings = admin_supabase.table("bookings")\
+                .select("checkin_date, checkout_date")\
+                .eq("room_id", room_id)\
+                .in_("status", ["paid", "pending"])\
+                .gte("checkout_date", datetime.now().strftime('%Y-%m-%d'))\
+                .order("checkin_date")\
+                .execute().data
+            
+            for b in upcoming_bookings:
+                d_start = datetime.strptime(b['checkin_date'], '%Y-%m-%d')
+                d_end = datetime.strptime(b['checkout_date'], '%Y-%m-%d')
+                curr = d_start
+                while curr < d_end: # Don't include checkout day as occupied for the next checkin
+                    occupied_dates.append(curr.strftime('%Y-%m-%d'))
+                    curr += timedelta(days=1)
+            
+            # Sort and remove duplicates (though they shouldn't exist if data is clean)
+            occupied_dates = sorted(list(set(occupied_dates)))
         
     return render_template('admin/search.html', 
                            results=results, 
                            query=query, 
                            start_date=start_date, 
-                           end_date=end_date)
+                           end_date=end_date,
+                           room_id=room_id,
+                           rooms_list=rooms_list,
+                           occupied_dates=occupied_dates)
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
 def admin_settings():
