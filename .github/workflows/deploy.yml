@@ -19,7 +19,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd /var/www/bannaresort
             git pull origin main
             if [ -f "deploy.sh" ]; then
               bash deploy.sh
