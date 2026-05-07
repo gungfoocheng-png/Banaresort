@@ -1,0 +1,28 @@
+[Unit]
+Description=Gunicorn instance to serve Bannaresort Flask App
+After=network.target
+
+[Service]
+# User and Group (change if not root)
+User=root
+Group=www-data
+
+# Working Directory (change to your project path)
+WorkingDirectory=/root/Banaresort
+
+# Path to gunicorn in your virtualenv
+ExecStart=/root/Banaresort/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:80 app:app
+
+# Restart settings
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+# --- INSTRUCTIONS ---
+# 1. Copy this file to /etc/systemd/system/bannaresort.service
+#    sudo cp bannaresort.service /etc/systemd/system/bannaresort.service
+# 2. Update WorkingDirectory and ExecStart path if necessary.
+# 3. Reload systemd: sudo systemctl daemon-reload
+# 4. Enable and Start: sudo systemctl enable bannaresort && sudo systemctl start bannaresort

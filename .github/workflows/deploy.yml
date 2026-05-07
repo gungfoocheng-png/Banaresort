@@ -1,0 +1,31 @@
+name: Auto Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            git pull origin main
+            if [ -f "deploy.sh" ]; then
+              bash deploy.sh
+            else
+              # Fallback if deploy.sh is missing
+              source venv/bin/activate || python3 -m venv venv && source venv/bin/activate
+              pip install -r requirements.txt
+              sudo systemctl restart bannaresort
+            fi

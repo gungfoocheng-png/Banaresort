@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}จัดการผังรีสอร์ท - Baan Na Resort (Admin){% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 2rem;">
+    <h2 style="color: var(--primary); text-align: center; margin-bottom: 2rem;">🗺️ จัดการตำแหน่งผังรีสอร์ท</h2>
+
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <!-- Left Side: Room List -->
+        <div style="flex: 1; min-width: 300px; max-width: 350px;">
+            <div class="admin-card" style="padding: 1.5rem;">
+                <h3 style="margin-top: 0;">1. เลือกห้องพัก</h3>
+                <p style="font-size: 0.9rem; color: #666;">คลิกเลือกห้องพักด้านล่าง จากนั้นนำไปคลิกวางบนแผนที่เพื่ออัปเดตตำแหน่ง</p>
+                <div id="editor-room-list" style="max-height: 500px; overflow-y: auto; padding-right: 10px; margin-top: 1rem;">
+                    <p>กำลังโหลดรายชื่อห้องพัก...</p>
+                </div>
+                
+                <hr style="margin: 2rem 0;">
+                
+                <button class="btn btn-primary" style="width: 100%;" onclick="saveMapCoords()">💾 บันทึกตำแหน่งทั้งหมด</button>
+                <p id="save-status" style="text-align: center; margin-top: 0.5rem; font-weight: bold;"></p>
+            </div>
+        </div>
+
+        <!-- Right Side: Map -->
+        <div style="flex: 3; min-width: 500px;">
+            <div class="map-container" style="padding: 0;">
+                <div id="editor-resort-map" class="resort-map" style="cursor: crosshair;">
+                    <!-- Rooms will be placed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.editor-room-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+}
+.editor-room-btn:hover {
+    background: #e2e8f0;
+}
+.editor-room-btn.selected {
+    background: var(--primary-light);
+    color: white;
+    border-color: var(--primary);
+}
+.editor-room-btn.placed {
+    border-left: 5px solid var(--status-available);
+}
+</style>
+
+<script>
+let roomsData = [];
+let selectedRoomId = null;
+let currentCoords = {};
+
+// Drag state
+let isDragging = false;
+let dragMarkerId = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('/api/rooms');
+        roomsData = await res.json();
+        
+        // Load initial coords
+        roomsData.forEach(r => {
+            if(r.map_coords) {
+                currentCoords[r.id] = r.map_coords;
+            }
+        });
+        
+        renderRoomList();
+        renderMapMarkers();
+        
+        const mapEl = document.getElementById('editor-resort-map');
+        
+        // Global mouse events for dragging
+        document.onmousemove = (e) => {
+            if (!isDragging || !dragMarkerId) return;
+            
+            const rect = mapEl.getBoundingClientRect();
+            
+            // Calculate new position for top-left of marker
+            let leftPx = (e.clientX - rect.left) - dragOffsetX;
+            let topPx = (e.clientY - rect.top) - dragOffsetY;
+            
+            // Convert to center point
+            let centerX = leftPx + 30;
+            let centerY = topPx + 30;
+            
+            // Convert to percentage
+            let x = (centerX / rect.width) * 100;
+            let y = (centerY / rect.height) * 100;
+            
+            // Constrain to map boundaries
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            
+            currentCoords[dragMarkerId].x = x;
+            currentCoords[dragMarkerId].y = y;
+            
+            // Update DOM element directly for smooth dragging
+            const m = document.getElementById('marker-' + dragMarkerId);
+            if(m) {
+                m.style.left = `calc(${x}% - 30px)`;
+                m.style.top = `calc(${y}% - 30px)`;
+            }
+        };
+
+        document.onmouseup = () => {
+            isDragging = false;
+            dragMarkerId = null;
+        };
+        
+    } catch (e) {
+        console.error(e);
+        alert('โหลดข้อมูลผิดพลาด');
+    }
+});
+
+function renderRoomList() {
+    const listEl = document.getElementById('editor-room-list');
+    listEl.innerHTML = '';
+    
+    roomsData.forEach(room => {
+        const btn = document.createElement('button');
+        const isPlaced = !!currentCoords[room.id];
+        
+        btn.className = `editor-room-btn ${selectedRoomId == room.id ? 'selected' : ''} ${isPlaced ? 'placed' : ''}`;
+        btn.innerHTML = `<b>${room.name}</b> ${room.room_number ? '(#'+room.room_number+')' : ''} <span style="float:right;">${isPlaced ? '✅' : '❌'}</span>`;
+        
+        btn.onclick = () => {
+            selectedRoomId = room.id;
+            if (!currentCoords[room.id]) {
+                // If not placed, add to center of map
+                currentCoords[room.id] = { x: 50, y: 50, label: room.room_number || room.id };
+            }
+            renderMapMarkers();
+            renderRoomList();
+        };
+        
+        listEl.appendChild(btn);
+    });
+}
+
+function renderMapMarkers() {
+    const mapEl = document.getElementById('editor-resort-map');
+    // Clear existing markers
+    mapEl.innerHTML = '';
+    
+    // Draw markers from currentCoords
+    Object.keys(currentCoords).forEach(rId => {
+        const coord = currentCoords[rId];
+        const marker = document.createElement('div');
+        marker.id = 'marker-' + rId;
+        
+        // Highlight if selected
+        if (rId == selectedRoomId) {
+            marker.className = 'room-marker I'; // Green
+            marker.style.boxShadow = '0 0 15px 5px rgba(76, 175, 80, 0.7)';
+            marker.style.zIndex = '100';
+            marker.style.transform = 'scale(1.1)';
+        } else {
+            marker.className = 'room-marker I'; 
+        }
+        
+        marker.style.left = `calc(${coord.x}% - 30px)`; // Center the 60px marker
+        marker.style.top = `calc(${coord.y}% - 30px)`;
+        marker.innerText = coord.label;
+        marker.style.cursor = 'grab';
+        
+        // Dragging event
+        marker.onmousedown = (e) => {
+            e.preventDefault(); // Prevent text selection
+            isDragging = true;
+            dragMarkerId = rId;
+            selectedRoomId = rId; // Auto select on drag
+            marker.style.cursor = 'grabbing';
+            
+            const markerRect = marker.getBoundingClientRect();
+            dragOffsetX = e.clientX - markerRect.left;
+            dragOffsetY = e.clientY - markerRect.top;
+            
+            renderRoomList(); // Update selected state in list
+            renderMapMarkers(); // Update selected glow
+        };
+        
+        // Allow removing marker on right click
+        marker.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if(confirm(`ต้องการลบตำแหน่งของ ${coord.label} หรือไม่?`)) {
+                delete currentCoords[rId];
+                if (selectedRoomId == rId) selectedRoomId = null;
+                renderMapMarkers();
+                renderRoomList();
+            }
+        };
+        
+        mapEl.appendChild(marker);
+    });
+}
+
+async function saveMapCoords() {
+    const statusEl = document.getElementById('save-status');
+    statusEl.innerText = 'กำลังบันทึก...';
+    statusEl.style.color = 'var(--primary)';
+    
+    try {
+        const res = await fetch('/api/admin/save_map_coords', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentCoords)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+            statusEl.innerText = '✅ บันทึกสำเร็จ!';
+            statusEl.style.color = 'green';
+            setTimeout(() => statusEl.innerText = '', 3000);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (e) {
+        statusEl.innerText = '❌ ผิดพลาด: ' + e.message;
+        statusEl.style.color = 'red';
+    }
+}
+</script>
+{% endblock %}
