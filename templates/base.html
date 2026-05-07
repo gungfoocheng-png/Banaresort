@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}บ้านนารีสอร์ท - Baan Na Resort{% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>{% block title %} บ้านนารีสอร์ท - Baan Na Resort{% endblock %}</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&family=Sarabun:wght@300;400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
     {% block head %}{% endblock %}
 </head>
+
 <body>
     <nav class="navbar">
         <div class="logo">
@@ -22,7 +28,9 @@
             {% endif %}
 
             {% if session.get('user_id') %}
-            <span style="color: var(--accent); font-weight: 600; margin-left: 1.5rem; border-right: 2px solid rgba(255,255,255,0.2); padding-right: 1.5rem;">👋 สวัสดี, {{ session.get('full_name', 'ลูกค้า') }}</span>
+            <span
+                style="color: var(--accent); font-weight: 600; margin-left: 1.5rem; border-right: 2px solid rgba(255,255,255,0.2); padding-right: 1.5rem;">👋
+                สวัสดี, {{ session.get('full_name', 'ลูกค้า') }}</span>
             {% if session.get('role') in ['admin', 'super_admin'] %}
             <div class="admin-dropdown">
                 <button class="admin-dropbtn">🛠️ จัดการระบบ <i class="fas fa-caret-down"></i></button>
@@ -31,12 +39,12 @@
                     <a href="/admin/walkin">🚶 จองห้อง Walk-in</a>
                     <a href="/admin/search">🔍 ค้นหาการจอง</a>
                     <a href="/admin">📊 แผงควบคุม (Dashboard)</a>
-                    
+
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-group-label">✍️ จัดการเนื้อหา</div>
                     <a href="/admin/activities">📝 จัดการกิจกรรม & ที่เที่ยว</a>
                     <a href="/admin/expenses">💰 บันทึกรายจ่าย</a>
-                    
+
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-group-label">⚙️ ตั้งค่าระบบ</div>
                     <a href="/admin/settings">🏨 ข้อมูลรีสอร์ท</a>
@@ -55,20 +63,21 @@
     </nav>
 
     {% if request.path.startswith('/admin') %}
-        {% include 'admin/admin_nav.html' %}
+    {% include 'admin/admin_nav.html' %}
     {% endif %}
 
     <main>
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="container">
-              {% for category, message in messages %}
-                <div class="card" style="background-color: {% if category == 'error' %}#ffebee{% else %}#e8f5e9{% endif %}; border-left: 5px solid {% if category == 'error' %}#f44336{% else %}#4caf50{% endif %};">
-                  {{ message }}
-                </div>
-              {% endfor %}
+        {% if messages %}
+        <div class="container">
+            {% for category, message in messages %}
+            <div class="card"
+                style="background-color: {% if category == 'error' %}#ffebee{% else %}#e8f5e9{% endif %}; border-left: 5px solid {% if category == 'error' %}#f44336{% else %}#4caf50{% endif %};">
+                {{ message }}
             </div>
-          {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
@@ -93,4 +102,5 @@
     </script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
