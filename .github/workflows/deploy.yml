@@ -20,7 +20,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/bannaresort
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             if [ -f "deploy.sh" ]; then
               bash deploy.sh
             else
