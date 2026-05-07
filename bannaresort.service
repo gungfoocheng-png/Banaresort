@@ -11,7 +11,7 @@ Group=www-data
 WorkingDirectory=/var/www/bannaresort
 
 # Path to gunicorn in your virtualenv
-ExecStart=/var/www/bannaresort/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:80 app:app
+ExecStart=/var/www/bannaresort/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:5000 app:app
 
 # Restart settings
 Restart=always
