@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import supabase, update_room_status, update_booking_status
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 
 # Configure logging
@@ -61,7 +61,7 @@ def check_completed_bookings():
     If today is checkout day or later, and it's after 9:00 AM, 
     we revert the room status to 'I'.
     """
-    now = datetime.now()
+    now = datetime.now(timezone(timedelta(hours=7)))
     if now.hour < 9:
         return
         

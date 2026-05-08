@@ -99,7 +99,7 @@ def debug_session():
 
 def get_current_status_rooms():
     try:
-        now = datetime.now()
+        now = datetime.now(timezone(timedelta(hours=7)))
         today = now.strftime('%Y-%m-%d')
         tomorrow = (now + timedelta(days=1)).strftime('%Y-%m-%d')
         
@@ -385,7 +385,7 @@ def api_check_availability():
         
     try:
         # Overlap logic with 9:00 AM rule
-        now = datetime.now()
+        now = datetime.now(timezone(timedelta(hours=7)))
         current_hour = now.hour
         
         query = admin_supabase.table("bookings")\
@@ -564,7 +564,7 @@ def upload_slip(booking_id):
         error_msg = str(e)
         print(f"Slip upload error: {error_msg}")
         with open("upload_error.log", "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now()}: {error_msg}\n")
+            f.write(f"{datetime.now(timezone(timedelta(hours=7)))}: {error_msg}\n")
         # Fallback if upload fails
         slip_url = "https://placehold.co/600x800?text=Upload+Error+" + error_msg[:20]
     
@@ -705,7 +705,7 @@ def admin_walkin():
             }).execute()
             
             # Update room status to 'O' if check-in is today
-            now = datetime.now()
+            now = datetime.now(timezone(timedelta(hours=7)))
             today_str = now.strftime('%Y-%m-%d')
             if checkin_date == today_str:
                 update_room_status(room_id, "O")
@@ -718,7 +718,7 @@ def admin_walkin():
     # GET: If dates provided, search for rooms
     total_available = 0
     if checkin_date and checkout_date:
-        now = datetime.now()
+        now = datetime.now(timezone(timedelta(hours=7)))
         current_hour = now.hour
         
         query = admin_supabase.table("bookings")\
@@ -761,7 +761,7 @@ def admin_walkin():
 def admin_daily():
     if not is_admin(): return redirect(url_for('login'))
     # Fetch bookings and filter in Python to avoid syntax issues with OR filters
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = datetime.now(timezone(timedelta(hours=7))).strftime('%Y-%m-%d')
     resp = admin_supabase.table("bookings").select("*, rooms(*)").order("created_at", desc=True).limit(50).execute()
     # Filter bookings that check-in or check-out today
     daily_bookings = [b for b in resp.data if b['checkin_date'] == today or b['checkout_date'] == today]
@@ -780,7 +780,7 @@ def admin_daily_income():
     if not is_admin(): return redirect(url_for('login'))
     
     # Get today's range in local time (ISO format)
-    now = datetime.now()
+    now = datetime.now(timezone(timedelta(hours=7)))
     today_str = now.strftime('%Y-%m-%d')
     start_time = f"{today_str}T00:00:00Z"
     end_time = f"{today_str}T23:59:59Z"
@@ -940,7 +940,7 @@ def admin_search():
                 .select("checkin_date, checkout_date")\
                 .eq("room_id", room_id)\
                 .in_("status", ["paid", "pending"])\
-                .gte("checkout_date", datetime.now().strftime('%Y-%m-%d'))\
+                .gte("checkout_date", datetime.now(timezone(timedelta(hours=7))).strftime('%Y-%m-%d'))\
                 .order("checkin_date")\
                 .execute().data
             
