@@ -22,6 +22,22 @@
             </div>
         </form>
     </div>
+    
+    <!-- Resort Map Section -->
+    <div class="card admin-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: var(--text-dark); text-align: center;">🗺️ ผังรีสอร์ท (คลิกที่ห้องเพื่อจอง)</h3>
+        <div class="map-container" style="margin-top: 1rem; border: none; min-height: 400px;">
+            <div id="walkin-resort-map" class="resort-map" style="max-width: 100%;">
+                <p style="padding-top: 150px; text-align: center;">กำลังโหลดผังรีสอร์ท...</p>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; font-size: 0.9rem;">
+            <div><span style="display:inline-block; width:15px; height:15px; background:var(--status-available); border-radius:3px; vertical-align:middle;"></span> ว่าง</div>
+            <div><span style="display:inline-block; width:15px; height:15px; background:var(--status-reserved); border-radius:3px; vertical-align:middle;"></span> ติดจอง/รอชำระ</div>
+            <div><span style="display:inline-block; width:15px; height:15px; background:var(--status-occupied); border-radius:3px; vertical-align:middle;"></span> มีผู้พักแล้ว</div>
+            <div><span style="display:inline-block; width:15px; height:15px; background:var(--status-maintenance); border-radius:3px; vertical-align:middle;"></span> ปรับปรุง</div>
+        </div>
+    </div>
 
     {% if available_rooms != None %}
     <div class="card admin-card" style="padding: 2rem;">
@@ -166,5 +182,80 @@
     function closeWalkinModal() {
         document.getElementById('walkin-modal').style.display = 'none';
     }
+
+    // Map Rendering Logic for Walk-in
+    async function renderWalkinMap() {
+        const mapEl = document.getElementById('walkin-resort-map');
+        const checkin = document.getElementById('search-checkin').value;
+        const checkout = document.getElementById('search-checkout').value;
+
+        if (!mapEl) return;
+
+        try {
+            // 1. Fetch availability if dates are present
+            let unavailableIds = [];
+            let unavailableStatus = {};
+            
+            if (checkin && checkout && new Date(checkin) < new Date(checkout)) {
+                const availRes = await fetch('/api/check_availability', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkin, checkout })
+                });
+                const availData = await availRes.json();
+                unavailableIds = availData.unavailable_ids || [];
+                unavailableStatus = availData.unavailable_status || {};
+            }
+
+            // 2. Fetch room data
+            const roomsRes = await fetch('/api/rooms');
+            const rooms = await roomsRes.json();
+
+            mapEl.innerHTML = ''; // Clear map
+
+            rooms.forEach(room => {
+                const coords = room.map_coords || { x: 0, y: 0 };
+                const marker = document.createElement('div');
+                
+                let displayStatus = room.status;
+                if (room.status === 'maintenance') {
+                    displayStatus = 'maintenance';
+                } else if (unavailableIds.includes(room.id)) {
+                    displayStatus = unavailableStatus[room.id] || 'R';
+                } else {
+                    displayStatus = 'I';
+                }
+
+                marker.className = `room-marker ${displayStatus}`;
+                marker.style.left = `calc(${coords.x}% - 10px)`;
+                marker.style.top = `calc(${coords.y}% - 10px)`;
+                marker.innerText = coords.label || room.room_number || room.id;
+                marker.setAttribute('data-name', room.name);
+                
+                marker.onclick = () => {
+                    if (displayStatus === 'I') {
+                        openWalkinModal(room.id, room.name, room.price);
+                    } else if (displayStatus === 'maintenance') {
+                        alert('ห้องนี้อยู่ระหว่างการปรับปรุงครับ');
+                    } else {
+                        alert('ห้องนี้ไม่ว่างในช่วงเวลาที่เลือกครับ');
+                    }
+                };
+                
+                mapEl.appendChild(marker);
+            });
+        } catch (error) {
+            console.error('Error rendering walkin map:', error);
+            mapEl.innerHTML = '<p style="padding-top:150px; color:red;">เกิดข้อผิดพลาดในการโหลดแผนผัง</p>';
+        }
+    }
+
+    // Initialize map on load and update when dates change
+    document.addEventListener('DOMContentLoaded', () => {
+        renderWalkinMap();
+        
+        document.getElementById('search-checkin').addEventListener('change', renderWalkinMap);
+        document.getElementById('search-checkout').addEventListener('change', renderWalkinMap);
+    });
 </script>
 {% endblock %}
