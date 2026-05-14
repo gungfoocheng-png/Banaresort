@@ -99,8 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             let topPx = (e.clientY - rect.top) - dragOffsetY;
             
             // Convert to center point
-            let centerX = leftPx + 30;
-            let centerY = topPx + 30;
+            let centerX = leftPx + 10;
+            let centerY = topPx + 10;
             
             // Convert to percentage
             let x = (centerX / rect.width) * 100;
@@ -116,8 +116,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Update DOM element directly for smooth dragging
             const m = document.getElementById('marker-' + dragMarkerId);
             if(m) {
-                m.style.left = `calc(${x}% - 30px)`;
-                m.style.top = `calc(${y}% - 30px)`;
+                m.style.left = `calc(${x}% - 10px)`;
+                m.style.top = `calc(${y}% - 10px)`;
             }
         };
 
@@ -178,9 +178,13 @@ function renderMapMarkers() {
             marker.className = 'room-marker I'; 
         }
         
-        marker.style.left = `calc(${coord.x}% - 30px)`; // Center the 60px marker
-        marker.style.top = `calc(${coord.y}% - 30px)`;
+        marker.style.left = `calc(${coord.x}% - 10px)`; // Center the 20px marker
+        marker.style.top = `calc(${coord.y}% - 10px)`;
         marker.innerText = coord.label;
+        const roomObj = roomsData.find(r => r.id == rId);
+        if (roomObj) {
+            marker.setAttribute('data-name', roomObj.name);
+        }
         marker.style.cursor = 'grab';
         
         // Dragging event

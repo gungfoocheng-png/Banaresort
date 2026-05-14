@@ -70,9 +70,10 @@ async function renderMap(unavailableIds = null, unavailableStatus = null) {
                 }
 
                 marker.className = `room-marker ${displayStatus}`;
-                marker.style.left = `calc(${coords.x}% - 30px)`;
-                marker.style.top = `calc(${coords.y}% - 30px)`;
+                marker.style.left = `calc(${coords.x}% - 10px)`;
+                marker.style.top = `calc(${coords.y}% - 10px)`;
                 marker.innerText = coords.label || room.room_number || room.id;
+                marker.setAttribute('data-name', room.name);
                 
                 marker.onclick = () => showRoomDetails(room);
                 
