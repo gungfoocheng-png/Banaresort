@@ -95,7 +95,9 @@ body {
     padding: 2rem;
     box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     position: relative;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
     min-height: 500px;
     border: 2px solid var(--secondary);
 }
@@ -103,6 +105,7 @@ body {
 .resort-map {
     position: relative;
     width: 100%;
+    min-width: 800px;
     max-width: 900px;
     aspect-ratio: 1218 / 682;
     height: auto;
@@ -674,5 +677,15 @@ body {
     }
     .admin-dropdown-content a:hover {
         background-color: rgba(255,255,255,0.1);
+    }
+    
+    .map-container::before {
+        content: '↔️ เลื่อนซ้าย-ขวาเพื่อดูแผนที่';
+        display: block;
+        text-align: center;
+        color: var(--primary);
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        font-weight: bold;
     }
 }
