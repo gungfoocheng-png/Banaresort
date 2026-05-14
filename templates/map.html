@@ -54,17 +54,17 @@
             
             <div style="margin-bottom: 1rem;">
                 <label>ชื่อ-นามสกุล:</label><br>
-                <input type="text" name="guest_name" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="text" name="guest_name" value="{{ session.get('full_name', '') }}" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             
             <div style="margin-bottom: 1rem;">
-                <label>เบอร์โทรศัพท์:</label><br>
-                <input type="tel" name="guest_phone" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <label>เบอร์โทรศัพท์ (10 หลัก):</label><br>
+                <input type="tel" name="guest_phone" value="{{ session.get('phone', '') }}" required pattern="\d{10}" maxlength="10" minlength="10" inputmode="numeric" placeholder="เช่น 0812345678" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             
             <div style="margin-bottom: 1rem;">
                 <label>อีเมล:</label><br>
-                <input type="email" name="guest_email" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="email" name="guest_email" value="{{ session.get('email', '') }}" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             
             <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
@@ -80,7 +80,11 @@
             
             <div style="display: flex; justify-content: flex-end; gap: 1rem;">
                 <button type="button" class="btn" onclick="closeModal()">ยกเลิก</button>
+                {% if session.get('user_id') %}
                 <button type="submit" class="btn btn-primary">ยืนยันการจอง</button>
+                {% else %}
+                <a href="{{ url_for('login', msg='book') }}" class="btn btn-primary" style="text-decoration: none;">เข้าสู่ระบบเพื่อจองห้องพัก</a>
+                {% endif %}
             </div>
         </form>
     </div>
